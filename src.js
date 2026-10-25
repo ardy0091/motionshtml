@@ -7,6 +7,7 @@ function tick(now) {
   }
   last = now;
   render(t); updateTime();
+  if (exporting && vtrack && now - lastReq >= 33) { vtrack.requestFrame(); lastReq = now; }
   requestAnimationFrame(tick);
 }
 function updateTime() {
@@ -107,6 +108,12 @@ function download(blob, filename) {
 $('png').onclick = () => { setRes(+$('q').value); render(t); cv.toBlob(b => { download(b, 'frame.png'); setRes(1); }, 'image/png'); };
 
 let recorder, chunks, mime, prevSel;
+let vtrack = null, lastReq = 0;
+function makeStream() {
+  const s = cv.captureStream(0); vtrack = s.getVideoTracks()[0];
+  if (!vtrack || !vtrack.requestFrame) { vtrack = null; return cv.captureStream(30); }
+  return s;
+}
 function pickMime(f) {
   const webm = ['video/webm;codecs=vp9', 'video/webm'];
   if (f === 'webm') return webm.find(x => MediaRecorder.isTypeSupported(x));
@@ -122,17 +129,17 @@ $('exp').onclick = () => {
   if (!mime) { alert('Format video tidak didukung browser ini.'); return; }
   prevSel = sel; exporting = true; chunks = [];
   const k = +$('q').value; setRes(k);
-  recorder = new MediaRecorder(cv.captureStream(30), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(k, 1.5))});
+  recorder = new MediaRecorder(makeStream(), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(k, 1.5))});
   recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
   recorder.onstop = () => {
     const isMp4 = mime.startsWith('video/mp4'), ext = isMp4 ? $('fmt').value : 'webm';
     download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), 'animasi.' + ext);
-    exporting = false; setRes(1); $('exp').disabled = false; $('exp').textContent = 'Ekspor video';
+    exporting = false; vtrack = null; setRes(1); $('exp').disabled = false; $('exp').textContent = 'Ekspor video';
   };
   $('exp').disabled = true; $('exp').textContent = 'Merekam…';
   t = 0; playing = true; recorder.start(200);
 };
-function finishExport() { playing = false; t = dur; $('play').textContent = 'Putar'; render(t); setTimeout(() => recorder.stop(), 150); }
+function finishExport() { playing = false; t = dur; $('play').textContent = 'Putar'; render(t); if (vtrack) vtrack.requestFrame(); setTimeout(() => recorder.stop(), 150); }
 
 /* ---------- contoh awal ---------- */
 layers = [
