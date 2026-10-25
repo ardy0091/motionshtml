@@ -1,16 +1,17 @@
 /* ai.js — prompt generator + render HTML canvas ke video (tanpa API key) */
 const $ = id => document.getElementById(id);
-const SIZE = {'16:9': [1280, 720], '9:16': [720, 1280], '1:1': [1000, 1000]};
+function dims() { const h = +$('res').value, r = $('ratio').value; return r === '16:9' ? [Math.round(h * 16 / 9), h] : r === '9:16' ? [h, Math.round(h * 16 / 9)] : [h, h]; }
 const fr = $('fr');
 
 function buildPrompt() {
-  const [w, h] = SIZE[$('ratio').value], s = $('secs').value;
+  const [w, h] = dims(), s = $('secs').value;
   return `Buatkan SATU file HTML lengkap untuk animasi motion graphics dengan tema: "${$('subject').value}". Gaya visual: ${$('style').value}.
 
 Aturan wajib:
 - Semua dalam satu file (HTML + CSS + JavaScript). Tanpa library, font, atau gambar dari luar.
 - Gunakan tepat satu <canvas id="stage" width="${w}" height="${h}"> dan gambar semuanya dengan Canvas 2D (ctx). Jangan pakai animasi CSS atau elemen DOM untuk visual utama.
 - Style: body{margin:0;background:#000} canvas{display:block;width:100%;height:auto}
+- Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.
 - Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame.
 - Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
 - Beri gerakan yang hidup: teks masuk dengan easing, objek bergerak, latar berubah halus.
@@ -18,7 +19,7 @@ Aturan wajib:
 - Keluarkan hanya satu blok kode HTML.`;
 }
 function refreshPrompt() { $('prompt').value = buildPrompt(); $('rsecs').value = $('secs').value; fr.style.aspectRatio = $('ratio').value.replace(':', '/'); }
-['subject', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
+['subject', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
 refreshPrompt();
 
 function copyText(txt, ta) {
@@ -64,7 +65,7 @@ $('go').onclick = async () => {
   if (!canvas) { $('go').disabled = false; return setStatus('Tidak ada <canvas> di kode ini, jadi tidak bisa direkam.', true); }
 
   const secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [];
-  const rec = new MediaRecorder(canvas.captureStream(+$('fps').value), {mimeType: mime, videoBitsPerSecond: 8e6});
+  const rec = new MediaRecorder(canvas.captureStream(+$('fps').value), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(Math.max(1, canvas.width * canvas.height / 921600), 0.75))});
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const t0 = performance.now();
   const timer = setInterval(() => {
