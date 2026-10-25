@@ -66,8 +66,10 @@ $('go').onclick = async () => {
   const canvas = findCanvas();
   if (!canvas) { $('go').disabled = false; return setStatus('Tidak ada <canvas> di kode ini, jadi tidak bisa direkam.', true); }
 
-  const secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [];
-  const rec = new MediaRecorder(canvas.captureStream(+$('fps').value), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(Math.max(1, canvas.width * canvas.height / 921600), 0.75))});
+  const secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [], fpsV = +$('fps').value;
+  let stream = canvas.captureStream(0), vt = stream.getVideoTracks()[0], ft = null;
+  if (vt && vt.requestFrame) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); else stream = canvas.captureStream(fpsV);
+  const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(Math.max(1, canvas.width * canvas.height / 921600), 0.75))});
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const t0 = performance.now();
   const timer = setInterval(() => {
@@ -76,7 +78,7 @@ $('go').onclick = async () => {
     setStatus(`Merekam ${canvas.width}×${canvas.height}… ${Math.round(p * 100)}%. Jangan tutup atau pindah tab.`);
   }, 200);
   rec.onstop = () => {
-    clearInterval(timer); $('pb').style.width = '100%';
+    clearInterval(timer); clearInterval(ft); $('pb').style.width = '100%';
     const ext = mime.startsWith('video/mp4') ? $('fmt').value : 'webm';
     download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), 'animasi-ai.' + ext);
     setStatus('Selesai. Video terunduh.'); $('go').disabled = false;
