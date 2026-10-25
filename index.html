@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Motion Studio</h1>
+  <a class="btn" href="ai.html">Buat dengan AI</a>
+  <label>Durasi (detik)<input id="dur" type="number" min="1" max="60" step="0.5" value="6"></label>
+  <label>Latar<input id="bg" type="color" value="#14213d" style="width:44px"></label>
+  <button id="png">Simpan PNG</button>
+  <button id="exp" class="pri">Ekspor video</button>
+</header>
+
+<main>
+  <aside>
+    <h2>Layer</h2>
+    <div class="add">
+      <button data-add="text">+ Teks</button>
+      <button data-add="rect">+ Kotak</button>
+      <button data-add="circle">+ Bulat</button>
+    </div>
+    <div id="layers" style="display:flex;flex-direction:column;gap:5px"></div>
+  </aside>
+
+  <section class="stage">
+    <canvas id="cv" width="1280" height="720"></canvas>
+    <div class="ctrl">
+      <button id="play">Putar</button>
+      <input id="seek" type="range" min="0" max="1" step="0.001" value="0" aria-label="Posisi waktu">
+      <output id="time">0.0 / 6.0 d</output>
+    </div>
+  </section>
+
+  <aside id="props"></aside>
+</main>
+
+<div class="tl">
+  <div class="names" id="names"></div>
+  <div class="tracks" id="tracks"></div>
+</div>
+<p class="hint">Seret objek di kanvas untuk memindahkan. Seret batang di timeline untuk mengatur waktu muncul. Klik area timeline untuk lompat ke waktu itu.</p>
+
+<script src="render.js"></script>
+<script src="src.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML ke Video</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.wrap{max-width:760px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.box h2{margin:0;font-size:15px}
+.box p{margin:0;color:var(--mute)}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+textarea{min-height:130px;font:12px/1.4 ui-monospace,Consolas,monospace}
+iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000;aspect-ratio:16/9}
+.bar2{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.bar2 i{display:block;height:100%;width:0;background:var(--acc)}
+#st{min-height:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>HTML ke Video</h1>
+  <a class="btn" href="index.html">Editor manual</a>
+</header>
+<div class="wrap">
+
+  <section class="box">
+    <h2>1. Buat prompt untuk AI</h2>
+    <p>Salin prompt ini ke ChatGPT, Claude, atau Gemini versi gratis. AI akan menulis kode HTML animasinya.</p>
+    <div class="f"><label>Tema animasi</label><input id="subject" value="Kotak laporan cuaca kota malam hari dengan hujan"></div>
+    <div class="row3">
+      <div class="f"><label>Rasio</label><select id="ratio"><option>16:9</option><option>9:16</option><option>1:1</option></select></div>
+      <div class="f"><label>Durasi (detik)</label><input id="secs" type="number" min="2" max="60" value="10"></div>
+      <div class="f"><label>Gaya</label><select id="style"><option>gelap sinematik</option><option>cerah berwarna</option><option>minimalis</option><option>neon</option></select></div>
+    </div>
+    <textarea id="prompt" readonly></textarea>
+    <button id="copy" class="pri">Salin prompt</button>
+  </section>
+
+  <section class="box">
+    <h2>2. Tempel kode dari AI</h2>
+    <textarea id="code" style="min-height:180px" placeholder="Tempel kode HTML lengkap di sini (mulai dari &lt;!DOCTYPE html&gt;)"></textarea>
+    <div style="display:flex;gap:8px"><button id="paste">Tempel dari clipboard</button><button id="prev">Pratinjau</button></div>
+    <iframe id="fr" sandbox="allow-scripts allow-same-origin" title="Pratinjau"></iframe>
+  </section>
+
+  <section class="box">
+    <h2>3. Render jadi video</h2>
+    <div class="row3">
+      <div class="f"><label>Lama rekam (detik)</label><input id="rsecs" type="number" min="2" max="120" value="10"></div>
+      <div class="f"><label>FPS</label><select id="fps"><option>30</option><option>60</option><option>24</option></select></div>
+      <div class="f"><label>&nbsp;</label><button id="go" class="pri">Render video</button></div>
+    </div>
+    <div class="bar2"><i id="pb"></i></div>
+    <p id="st">Siap. Tempel kode lalu klik Render video.</p>
+  </section>
+</div>
+<script src="ai.js"></script>
+</body>
+</html>
