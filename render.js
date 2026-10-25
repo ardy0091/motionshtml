@@ -2,6 +2,8 @@
 const W = 1280, H = 720;
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
+let SCALE = 1;
+function setRes(k){ SCALE = k; cv.width = Math.round(W*k); cv.height = Math.round(H*k); }
 let layers = [], sel = null, t = 0, playing = false, last = 0, exporting = false, dur = 6, bg = '#14213d', uid = 1;
 
 const ANIMS = {none:'Tanpa animasi', fade:'Muncul perlahan', slideL:'Masuk dari kiri', slideR:'Masuk dari kanan', slideUp:'Naik dari bawah', scale:'Membesar (pantul)', spin:'Putar masuk', bounce:'Jatuh memantul'};
@@ -37,6 +39,7 @@ function anim(name, p) {
 
 /* ---------- render ---------- */
 function render(time) {
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   for (const l of layers) {
     const local = time - l.start;
