@@ -67,7 +67,8 @@ function rsz(c) {
 }
 function loadFrame() {
   let code = $('code').value;
-  if ($('force').checked) { const inj = patchScript(dims()[0]); code = /<head[^>]*>/i.test(code) ? code.replace(/<head[^>]*>/i, m => m + inj) : inj + code; }
+  const inj = ($('force').checked ? patchScript(dims()[0]) : '');
+  if (inj) code = /<head[^>]*>/i.test(code) ? code.replace(/<head[^>]*>/i, m => m + inj) : inj + code;
   return new Promise(res => { fr.onload = () => setTimeout(res, 400); fr.srcdoc = code + '\n<!-- ' + Date.now() + ' -->'; });
 }
 function findCanvas() {
@@ -85,10 +86,17 @@ $('prev').onclick = async () => {
   setStatus(c ? `Canvas ditemukan: ${rsz(c).join('×')}. Siap dirender.` : 'Tidak ada <canvas> di kode ini. Minta AI membuat ulang dengan canvas.', !c);
 };
 
+
+/* Nama file hasil render mengikuti isi kolom Tema animasi */
+function fileBase() {
+  const n = $('subject').value.trim().replace(/[^\p{L}\p{N}_-]+/gu, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 80).replace(/_$/, '');
+  return n || 'animasi-ai';
+}
 function download(blob, name) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
+
 
 $('go').onclick = async () => {
   if (!$('code').value.trim()) return setStatus('Kolom kode masih kosong.', true);
@@ -102,7 +110,7 @@ $('go').onclick = async () => {
   const canvas = findCanvas();
   if (!canvas) { $('go').disabled = false; return setStatus('Tidak ada <canvas> di kode ini, jadi tidak bisa direkam.', true); }
 
-  const secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [], fpsV = +$('fps').value;
+  const base = fileBase(), secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [], fpsV = +$('fps').value;
   let stream = canvas.captureStream(0), vt = stream.getVideoTracks()[0], ft = null;
   if (vt && vt.requestFrame) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); else stream = canvas.captureStream(fpsV);
   const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.75))});
@@ -116,7 +124,7 @@ $('go').onclick = async () => {
   rec.onstop = () => {
     clearInterval(timer); clearInterval(ft); $('pb').style.width = '100%';
     const ext = mime.startsWith('video/mp4') ? $('fmt').value : 'webm';
-    download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), 'animasi-ai.' + ext);
+    download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), base + '.' + ext);
     setStatus('Selesai. Video terunduh.'); $('go').disabled = false;
   };
   rec.start(250);
