@@ -87,9 +87,9 @@ $('prev').onclick = async () => {
 };
 
 
-/* Nama file hasil render mengikuti isi kolom Tema animasi */
+/* Nama file hasil render = 8 kata pertama dari kolom Tema animasi */
 function fileBase() {
-  const n = $('subject').value.trim().replace(/[^\p{L}\p{N}_-]+/gu, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 80).replace(/_$/, '');
+  const n = $('subject').value.trim().replace(/[^\p{L}\p{N}_-]+/gu, '_').split('_').filter(Boolean).slice(0, 8).join('_').slice(0, 120).replace(/_$/, '');
   return n || 'animasi-ai';
 }
 function download(blob, name) {
