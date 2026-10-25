@@ -107,18 +107,26 @@ function download(blob, filename) {
 $('png').onclick = () => { setRes(+$('q').value); render(t); cv.toBlob(b => { download(b, 'frame.png'); setRes(1); }, 'image/png'); };
 
 let recorder, chunks, mime, prevSel;
+function pickMime(f) {
+  const webm = ['video/webm;codecs=vp9', 'video/webm'];
+  if (f === 'webm') return webm.find(x => MediaRecorder.isTypeSupported(x));
+  const list = ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4'];
+  let m = list.find(x => MediaRecorder.isTypeSupported(x));
+  if (!m) { alert('Browser ini belum bisa merekam MP4/MOV. Update Chrome ke versi terbaru. Sementara ini hasilnya berformat WebM.'); m = webm.find(x => MediaRecorder.isTypeSupported(x)); }
+  return m;
+}
 $('exp').onclick = () => {
   if (exporting) return;
   if (!window.MediaRecorder) { alert('Browser ini tidak mendukung ekspor video. Coba Chrome atau Edge.'); return; }
-  mime = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(m => MediaRecorder.isTypeSupported(m));
+  mime = pickMime($('fmt').value);
   if (!mime) { alert('Format video tidak didukung browser ini.'); return; }
   prevSel = sel; exporting = true; chunks = [];
   const k = +$('q').value; setRes(k);
   recorder = new MediaRecorder(cv.captureStream(30), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(k, 1.5))});
   recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
   recorder.onstop = () => {
-    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-    download(new Blob(chunks, {type: mime}), 'animasi.' + ext);
+    const isMp4 = mime.startsWith('video/mp4'), ext = isMp4 ? $('fmt').value : 'webm';
+    download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), 'animasi.' + ext);
     exporting = false; setRes(1); $('exp').disabled = false; $('exp').textContent = 'Ekspor video';
   };
   $('exp').disabled = true; $('exp').textContent = 'Merekam…';
