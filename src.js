@@ -104,7 +104,7 @@ function download(blob, filename) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
-$('png').onclick = () => cv.toBlob(b => download(b, 'frame.png'), 'image/png');
+$('png').onclick = () => { setRes(+$('q').value); render(t); cv.toBlob(b => { download(b, 'frame.png'); setRes(1); }, 'image/png'); };
 
 let recorder, chunks, mime, prevSel;
 $('exp').onclick = () => {
@@ -113,12 +113,13 @@ $('exp').onclick = () => {
   mime = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(m => MediaRecorder.isTypeSupported(m));
   if (!mime) { alert('Format video tidak didukung browser ini.'); return; }
   prevSel = sel; exporting = true; chunks = [];
-  recorder = new MediaRecorder(cv.captureStream(30), {mimeType: mime, videoBitsPerSecond: 8e6});
+  const k = +$('q').value; setRes(k);
+  recorder = new MediaRecorder(cv.captureStream(30), {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(k, 1.5))});
   recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
   recorder.onstop = () => {
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
     download(new Blob(chunks, {type: mime}), 'animasi.' + ext);
-    exporting = false; $('exp').disabled = false; $('exp').textContent = 'Ekspor video';
+    exporting = false; setRes(1); $('exp').disabled = false; $('exp').textContent = 'Ekspor video';
   };
   $('exp').disabled = true; $('exp').textContent = 'Merekam…';
   t = 0; playing = true; recorder.start(200);
