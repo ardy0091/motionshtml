@@ -122,8 +122,44 @@ function pickMime(f) {
   if (!m) { alert('Browser ini belum bisa merekam MP4/MOV. Update Chrome ke versi terbaru. Sementara ini hasilnya berformat WebM.'); m = webm.find(x => MediaRecorder.isTypeSupported(x)); }
   return m;
 }
-$('exp').onclick = () => {
+async function exportFast(fmt) {
+  const k = +$('q').value, w = Math.round(W * k), h = Math.round(H * k), fps = 30, n = Math.max(2, Math.round(dur * fps));
+  const px = w * h, lv = px <= 921600 ? '1f' : px <= 2088960 ? '28' : px <= 5652480 ? '32' : '33';
+  let cfg = null;
+  for (const c of ['6400', '4d00', '4200']) {
+    const t = {codec: 'avc1.' + c + lv, width: w, height: h, bitrate: Math.round(8e6 * Math.pow(k, 1.5)), framerate: fps, latencyMode: 'realtime'};
+    try { if ((await VideoEncoder.isConfigSupported(t)).supported) { cfg = t; break; } } catch (e) {}
+  }
+  if (!cfg) return false;
+  exporting = true; playing = false; $('play').textContent = 'Putar'; $('exp').disabled = true;
+  const samples = []; let avcC = null, err = null;
+  const enc = new VideoEncoder({
+    output: (c, m) => {
+      const d = new Uint8Array(c.byteLength); c.copyTo(d); samples.push({data: d, key: c.type === 'key'});
+      const ds = m && m.decoderConfig && m.decoderConfig.description;
+      if (ds && !avcC) avcC = ArrayBuffer.isView(ds) ? new Uint8Array(ds.buffer, ds.byteOffset, ds.byteLength).slice() : new Uint8Array(ds.slice(0));
+    },
+    error: e => { err = e; }
+  });
+  try {
+    setRes(k); enc.configure(cfg);
+    for (let i = 0; i < n && !err; i++) {
+      render(i / fps);
+      const f = new VideoFrame(cv, {timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps)});
+      enc.encode(f, {keyFrame: i % fps === 0}); f.close();
+      while (enc.encodeQueueSize > 6 && !err) await new Promise(r => setTimeout(r, 4));
+      if (i % 5 === 0) { $('exp').textContent = 'Render ' + Math.round(i / n * 100) + '%'; await new Promise(r => setTimeout(r)); }
+    }
+    await enc.flush(); enc.close();
+    if (err || !avcC || samples.length < n) throw err || new Error('encode gagal');
+    download(muxMp4({samples, avcC, w, h, fps, mov: fmt === 'mov'}), 'animasi.' + fmt);
+    return true;
+  } catch (e) { console.warn('Ekspor cepat gagal, pakai perekam biasa', e); try { enc.close(); } catch (_) {} return false; }
+  finally { exporting = false; setRes(1); $('exp').disabled = false; $('exp').textContent = 'Ekspor video'; }
+}
+$('exp').onclick = async () => {
   if (exporting) return;
+  if ($('fmt').value !== 'webm' && window.VideoEncoder && window.VideoFrame && await exportFast($('fmt').value)) return;
   if (!window.MediaRecorder) { alert('Browser ini tidak mendukung ekspor video. Coba Chrome atau Edge.'); return; }
   mime = pickMime($('fmt').value);
   if (!mime) { alert('Format video tidak didukung browser ini.'); return; }
@@ -150,3 +186,4 @@ layers = [
 ];
 select(layers[2].id);
 requestAnimationFrame(n => { last = n; tick(n); });
+    
