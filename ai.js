@@ -57,7 +57,9 @@ function download(blob, name) {
 $('go').onclick = async () => {
   if (!$('code').value.trim()) return setStatus('Kolom kode masih kosong.', true);
   if (!window.MediaRecorder) return setStatus('Browser tidak mendukung perekaman. Gunakan Chrome atau Edge.', true);
-  const mime = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(m => MediaRecorder.isTypeSupported(m));
+  const webm = ['video/webm;codecs=vp9', 'video/webm'];
+  let mime = ($('fmt').value === 'webm' ? webm : ['video/mp4;codecs=avc1.42E01E', 'video/mp4']).find(m => MediaRecorder.isTypeSupported(m));
+  if (!mime && $('fmt').value !== 'webm') { alert('Browser ini belum bisa merekam MP4/MOV. Update Chrome. Sementara hasilnya WebM.'); mime = webm.find(m => MediaRecorder.isTypeSupported(m)); }
   if (!mime) return setStatus('Format video tidak didukung browser ini.', true);
   $('go').disabled = true; setStatus('Memuat animasi dari awal…');
   await loadFrame();
@@ -75,7 +77,8 @@ $('go').onclick = async () => {
   }, 200);
   rec.onstop = () => {
     clearInterval(timer); $('pb').style.width = '100%';
-    download(new Blob(chunks, {type: mime}), 'animasi-ai.' + (mime.startsWith('video/mp4') ? 'mp4' : 'webm'));
+    const ext = mime.startsWith('video/mp4') ? $('fmt').value : 'webm';
+    download(new Blob(chunks, {type: ext === 'mov' ? 'video/quicktime' : mime}), 'animasi-ai.' + ext);
     setStatus('Selesai. Video terunduh.'); $('go').disabled = false;
   };
   rec.start(250);
