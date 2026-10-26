@@ -62,13 +62,19 @@ function patchScript(tw) {
   'Object.defineProperty(cv,"height",{get:function(){return lh},set:function(v){lh=+v||0;if(lw)sync();},configurable:true});' +
   'sync();return c;};})();</' + 'script>';
 }
+/* Menyalin frame tepat setelah animasi selesai menggambar (irama frame merata, tidak patah-patah) */
+function syncPatch() {
+  return '<script>(function(){var r=window.requestAnimationFrame.bind(window),last=0;' +
+  'window.requestAnimationFrame=function(cb){return r(function(ts){try{cb(ts)}finally{var v=window.__vt,f=window.__fps||30;' +
+  'if(v&&v.requestFrame&&ts-last>=1000/f-2){v.requestFrame();last=ts;window.__hits=(window.__hits||0)+1}}})}})();</' + 'script>';
+}
 function rsz(c) {
   const P = fr.contentWindow.HTMLCanvasElement.prototype;
   return [Object.getOwnPropertyDescriptor(P, 'width').get.call(c), Object.getOwnPropertyDescriptor(P, 'height').get.call(c)];
 }
 function loadFrame() {
   let code = $('code').value;
-  const inj = ($('force').checked ? patchScript(dims()[0]) : '');
+  const inj = syncPatch() + ($('force').checked ? patchScript(dims()[0]) : '');
   if (inj) code = /<head[^>]*>/i.test(code) ? code.replace(/<head[^>]*>/i, m => m + inj) : inj + code;
   return new Promise(res => { fr.onload = () => setTimeout(res, 400); fr.srcdoc = code + '\n<!-- ' + Date.now() + ' -->'; });
 }
@@ -113,7 +119,8 @@ $('go').onclick = async () => {
 
   const base = fileBase(), secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [], fpsV = +$('fps').value;
   let stream = canvas.captureStream(0), vt = stream.getVideoTracks()[0], ft = null;
-  if (vt && vt.requestFrame) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); else stream = canvas.captureStream(fpsV);
+  const win = fr.contentWindow;
+  if (vt && vt.requestFrame) { win.__vt = vt; win.__fps = fpsV; win.__hits = 0; setTimeout(() => { if (!win.__hits && !ft) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); }, 800); } else stream = canvas.captureStream(fpsV);
   const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.min(60e6, Math.round(12e6 * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.9)))});
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const t0 = performance.now();
