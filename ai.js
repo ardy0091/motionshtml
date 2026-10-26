@@ -73,9 +73,9 @@ function rsz(c) {
   const P = fr.contentWindow.HTMLCanvasElement.prototype;
   return [Object.getOwnPropertyDescriptor(P, 'width').get.call(c), Object.getOwnPropertyDescriptor(P, 'height').get.call(c)];
 }
-function loadFrame() {
+function loadFrame(virtual) {
   let code = $('code').value;
-  const inj = syncPatch() + ($('force').checked ? patchScript(dims()[0]) : '');
+  const inj = syncPatch() + (virtual ? timePatch() : '') + ($('force').checked ? patchScript(dims()[0]) : '');
   if (inj) code = /<head[^>]*>/i.test(code) ? code.replace(/<head[^>]*>/i, m => m + inj) : inj + code;
   return new Promise(res => { fr.onload = () => setTimeout(res, 400); fr.srcdoc = code + '\n<!-- ' + Date.now() + ' -->'; });
 }
@@ -106,8 +106,65 @@ function download(blob, name) {
 }
 
 
+/* Waktu virtual: animasi dijalankan frame demi frame, tidak bergantung kecepatan HP */
+function timePatch() {
+  return '<script>(function(){var vt=0,cbs={},id=0,n=0,base=Date.now();' +
+  'performance.now=function(){return vt};Date.now=function(){return base+vt};' +
+  'window.requestAnimationFrame=function(f){n++;cbs[++id]=f;return id};' +
+  'window.cancelAnimationFrame=function(i){delete cbs[i]};' +
+  'window.__n=function(){return n};' +
+  'window.__step=function(dt){vt+=dt;var l=cbs;cbs={};for(var k in l){try{l[k](vt)}catch(e){console.error(e)}}};' +
+  '})();</' + 'script>';
+}
+async function exportFastAI(fmt) {
+  $('go').disabled = true; setStatus('Menyiapkan render cepat…');
+  let enc = null;
+  try {
+    await loadFrame(true);
+    const canvas = findCanvas(), win = fr.contentWindow;
+    if (!canvas || !win.__step || !win.__n()) return false;
+    const [w, h] = rsz(canvas), fps = +$('fps').value, secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), n = Math.round(secs * fps);
+    if (w % 2 || h % 2) return false;
+    const px = w * h, lv = px <= 921600 ? '1f' : px <= 2088960 ? '28' : px <= 5652480 ? '32' : '33';
+    const bitrate = Math.round(8e6 * (fps > 30 ? 1.4 : 1) * Math.pow(Math.max(1, px / 921600), 0.9));
+    let cfg = null;
+    for (const c of ['6400', '4d00', '4200']) {
+      for (const mode of ['constant', null]) {
+        const t = {codec: 'avc1.' + c + lv, width: w, height: h, bitrate, framerate: fps, latencyMode: 'realtime'};
+        if (mode) t.bitrateMode = mode;
+        try { if ((await VideoEncoder.isConfigSupported(t)).supported) { cfg = t; break; } } catch (e) {}
+      }
+      if (cfg) break;
+    }
+    if (!cfg) return false;
+    const samples = []; let avcC = null, err = null;
+    enc = new VideoEncoder({
+      output: (c, m) => {
+        const d = new Uint8Array(c.byteLength); c.copyTo(d); samples.push({data: d, key: c.type === 'key'});
+        const ds = m && m.decoderConfig && m.decoderConfig.description;
+        if (ds && !avcC) avcC = ArrayBuffer.isView(ds) ? new Uint8Array(ds.buffer, ds.byteOffset, ds.byteLength).slice() : new Uint8Array(ds.slice(0));
+      },
+      error: e => { err = e; }
+    });
+    enc.configure(cfg);
+    for (let i = 0; i < n && !err; i++) {
+      win.__step(1000 / fps);
+      const f = new VideoFrame(canvas, {timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps)});
+      enc.encode(f, {keyFrame: i % fps === 0}); f.close();
+      while (enc.encodeQueueSize > 6 && !err) await new Promise(r => setTimeout(r, 4));
+      if (i % 5 === 0) { $('pb').style.width = (i / n * 100) + '%'; setStatus(`Render cepat ${w}×${h}… ${Math.round(i / n * 100)}%`); await new Promise(r => setTimeout(r)); }
+    }
+    await enc.flush(); enc.close();
+    if (err || !avcC || samples.length < n) throw err || new Error('encode gagal');
+    download(muxMp4({samples, avcC, w, h, fps, mov: fmt === 'mov'}), fileBase() + '.' + fmt);
+    $('pb').style.width = '100%'; setStatus(`Selesai. Video ${secs} detik (${n} frame) terunduh.`);
+    return true;
+  } catch (e) { console.warn('Render cepat gagal', e); try { enc && enc.close(); } catch (_) {} return false; }
+  finally { $('go').disabled = false; }
+}
 $('go').onclick = async () => {
   if (!$('code').value.trim()) return setStatus('Kolom kode masih kosong.', true);
+  if ($('fast').checked && $('fmt').value !== 'webm' && window.VideoEncoder && window.VideoFrame && await exportFastAI($('fmt').value)) return;
   if (!window.MediaRecorder) return setStatus('Browser tidak mendukung perekaman. Gunakan Chrome atau Edge.', true);
   const webm = ['video/webm;codecs=vp9', 'video/webm'];
   let mime = ($('fmt').value === 'webm' ? webm : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1.4d0028', 'video/mp4;codecs=avc1.42E01E', 'video/mp4']).find(m => MediaRecorder.isTypeSupported(m));
