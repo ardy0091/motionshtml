@@ -3,6 +3,18 @@ const $ = id => document.getElementById(id);
 function dims() { const h = +$('res').value, r = $('ratio').value; return r === '16:9' ? [Math.round(h * 16 / 9), h] : r === '9:16' ? [h, Math.round(h * 16 / 9)] : [h, h]; }
 const fr = $('fr');
 
+const STYLES = {
+  'korporat bersih': 'korporat bersih dan profesional ala produk SaaS premium: latar putih keabuan sangat muda (#F6F8FB), kartu putih dengan sudut membulat 16px dan bayangan lembut berlapis, satu warna aksen biru royal (#2563EB) ditambah abu netral, ikon garis tipis konsisten, gerakan tenang dan presisi',
+  'glassmorphism': 'glassmorphism modern: latar gradasi mesh lembut (biru, ungu, merah muda), panel kaca semi-transparan (putih 12-20%) dengan blur dan garis tepi putih 1px, kedalaman berlapis, cahaya lembut di sudut',
+  'fintech premium': 'fintech premium dan mewah: latar hitam arang (#0B0B0F), aksen emas champagne (#C9A46B) dan putih hangat, garis tipis presisi, kartu dengan gradasi halus, warna sangat terbatas, kesan eksklusif dan tenang',
+  'gradasi mesh modern': 'modern dan berenergi: gradasi mesh berani (jingga, magenta, ungu), bentuk organik besar yang mengalir, kontras tinggi, elemen besar dan percaya diri, gerakan mengalir',
+  'isometrik 3D': 'ilustrasi isometrik 3D ala startup teknologi: blok dan kartu 3D pada sudut isometrik, palet pastel dengan satu warna aksen cerah, bayangan lembut, gerakan perakitan yang rapi dan memuaskan',
+  'editorial berani': 'editorial berani: blok warna datar besar (krem, hitam, satu warna cerah #FF4D2E), bentuk geometris tegas, kontras tinggi, gerakan cepat dan ritmis seperti motion graphics iklan',
+  'gelap sinematik': 'gelap sinematik: latar gelap dengan kontras tinggi, cahaya lembut dan vinyet halus, warna sangat terbatas, suasana dramatis namun bersih',
+  'cerah berwarna': 'cerah dan ceria: warna penuh tetapi harmonis, bentuk bulat ramah, gerakan memantul ringan',
+  'minimalis': 'minimalis: banyak ruang kosong, satu atau dua warna, bentuk geometris sederhana, gerakan halus dan terukur',
+  'neon': 'neon futuristik: latar sangat gelap, garis dan bentuk bercahaya (glow) dalam 2-3 warna neon, gerakan cepat dan tajam'
+};
 const PTYPES = {
   visual: {label: 'Tema animasi', head: t => `Buatkan SATU file HTML lengkap untuk animasi motion graphics dengan tema: "${t}".`, rules: [
     'Fokus hanya pada animasi visual: bentuk, objek, warna, dan gerakan dengan easing yang halus.',
@@ -18,7 +30,7 @@ const PTYPES = {
 };
 function buildPrompt() {
   const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value];
-  return `${p.head($('subject').value)} Gaya visual: ${$('style').value}.
+  return `${p.head($('subject').value)} Gaya visual: ${STYLES[$('style').value] || $('style').value}.
 
 Aturan wajib:
 - Semua dalam satu file (HTML + CSS + JavaScript). Tanpa library, font eksternal, atau gambar dari luar.
@@ -29,6 +41,9 @@ Aturan wajib:
 - Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
 ${p.rules.map(r => '- ' + r).join('\n')}
 - JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.
+- Komposisi: isi seluruh bingkai. Elemen utama harus besar dan terbaca jelas dari jauh, margin tepi kecil dan seimbang. Jangan menampilkan antarmuka mini di sudut atau ruang kosong yang besar.
+- Kualitas profesional: grid dan jarak yang rapi, sudut membulat konsisten, bayangan lembut berlapis, palet maksimal 4 warna, hierarki visual yang jelas, serta kedalaman lewat lapisan. Gerakan berurutan (stagger) dengan easing halus (ease-out cubic atau expo), tanpa gerakan kaku.
+- Patuhi gaya visual di atas dengan setia. Jangan memakai tampilan dashboard gelap biru-navy dengan aksen teal kecuali gaya yang dipilih memintanya.
 - Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
 - Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".
 - Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.`;
