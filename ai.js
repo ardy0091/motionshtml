@@ -10,6 +10,9 @@ const STYLES = {
   'gradasi mesh modern': 'modern dan berenergi: gradasi mesh berani (jingga, magenta, ungu), bentuk organik besar yang mengalir, kontras tinggi, elemen besar dan percaya diri, gerakan mengalir',
   'isometrik 3D': 'ilustrasi isometrik 3D ala startup teknologi: blok dan kartu 3D pada sudut isometrik, palet pastel dengan satu warna aksen cerah, bayangan lembut, gerakan perakitan yang rapi dan memuaskan',
   'editorial berani': 'editorial berani: blok warna datar besar (krem, hitam, satu warna cerah #FF4D2E), bentuk geometris tegas, kontras tinggi, gerakan cepat dan ritmis seperti motion graphics iklan',
+  'maskot vektor garis tebal': 'ilustrasi vektor maskot ala sticker atau emblem esports: garis tepi hitam tebal dan konsisten di semua bentuk, warna jenuh dengan kontras tinggi (magenta, hijau limau, ungu, biru elektrik, kuning, cyan), bayangan cel-shading dua nada, highlight putih mengilap, latar putih bersih atau gradasi cerah, efek aksen berupa percikan, serpihan, dan garis kilat yang memancar',
+  'sticker cerah glossy': 'sticker glossy yang ceria dan hidup: bentuk bulat tebal, outline tebal, warna permen cerah (pink, cyan, kuning, ungu), kilau mengilap, bayangan jatuh lembut, gerakan memantul lentur dengan squash and stretch',
+  'pop art komik': 'pop art komik: warna primer penuh dan kontras (merah, kuning, biru, magenta), outline hitam tebal, pola titik halftone, garis kecepatan dan ledakan aksen, gerakan cepat dengan jeda dramatis',
   'gelap sinematik': 'gelap sinematik: latar gelap dengan kontras tinggi, cahaya lembut dan vinyet halus, warna sangat terbatas, suasana dramatis namun bersih',
   'cerah berwarna': 'cerah dan ceria: warna penuh tetapi harmonis, bentuk bulat ramah, gerakan memantul ringan',
   'minimalis': 'minimalis: banyak ruang kosong, satu atau dua warna, bentuk geometris sederhana, gerakan halus dan terukur',
@@ -23,6 +26,11 @@ const PTYPES = {
     'Tampilkan HANYA teks di atas. Jangan menambah kata, subjudul, watermark, atau caption lain.',
     'Tiap baris atau kata masuk dengan animasi berbeda (slide, scale pantul, fade, putar), tertata rapi di tengah, mudah dibaca, dan keluar sebelum baris berikutnya muncul.',
     'Tambahkan elemen dekoratif sederhana (garis, bentuk, partikel) sebagai pendukung, tanpa teks tambahan.']},
+  maskot: {label: 'Subjek utama (karakter atau objek)', head: t => `Buatkan SATU file HTML lengkap untuk animasi SATU subjek utama (karakter, maskot, atau objek) bergaya ilustrasi vektor yang berwarna dan terasa hidup: "${t}".`, rules: [
+    'Gambar subjek di tengah dan besar (sekitar 60-70% tinggi bingkai), dibangun dari kurva Bezier dan bentuk yang berlapis: badan, detail, bayangan cel-shading dua nada, dan highlight putih mengilap.',
+    'Beri garis tepi hitam tebal yang konsisten pada semua bentuk (lineJoin dan lineCap bulat). Warna jenuh dan kontras tinggi, dengan latar putih bersih atau gradasi cerah.',
+    'Buat subjek terasa hidup: muncul dengan pop (scale overshoot), lalu gerak idle yang terus berjalan (bernapas, bergoyang, melayang), squash and stretch, gerak sekunder (tetesan, ekor, rambut, mahkota, daun), serta percikan, serpihan, atau garis efek yang memancar mengikuti aksinya.',
+    'Tanpa teks. Fokus hanya pada subjek dan efeknya.']},
   latar: {label: 'Tema latar', head: t => `Buatkan SATU file HTML lengkap untuk animasi LATAR BELAKANG abstrak yang bisa diulang tanpa putus (seamless loop), dengan tema: "${t}".`, rules: [
     'Tanpa teks sama sekali dan tanpa objek utama yang mencolok. Hanya pola, gradasi, partikel, gelombang, atau bentuk halus yang bergerak pelan.',
     'Awal dan akhir siklus harus identik (pakai fungsi sinus atau fase periodik) supaya loop tidak terlihat melompat.',
