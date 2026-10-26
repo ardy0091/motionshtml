@@ -29,6 +29,7 @@ Aturan wajib:
 - Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
 ${p.rules.map(r => '- ' + r).join('\n')}
 - JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.
+- Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
 - Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".
 - Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.`;
 }
@@ -102,7 +103,7 @@ $('go').onclick = async () => {
   if (!$('code').value.trim()) return setStatus('Kolom kode masih kosong.', true);
   if (!window.MediaRecorder) return setStatus('Browser tidak mendukung perekaman. Gunakan Chrome atau Edge.', true);
   const webm = ['video/webm;codecs=vp9', 'video/webm'];
-  let mime = ($('fmt').value === 'webm' ? webm : ['video/mp4;codecs=avc1.42E01E', 'video/mp4']).find(m => MediaRecorder.isTypeSupported(m));
+  let mime = ($('fmt').value === 'webm' ? webm : ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1.4d0028', 'video/mp4;codecs=avc1.42E01E', 'video/mp4']).find(m => MediaRecorder.isTypeSupported(m));
   if (!mime && $('fmt').value !== 'webm') { alert('Browser ini belum bisa merekam MP4/MOV. Update Chrome. Sementara hasilnya WebM.'); mime = webm.find(m => MediaRecorder.isTypeSupported(m)); }
   if (!mime) return setStatus('Format video tidak didukung browser ini.', true);
   $('go').disabled = true; setStatus('Memuat animasi dari awal…');
@@ -113,7 +114,7 @@ $('go').onclick = async () => {
   const base = fileBase(), secs = Math.max(2, Math.min(120, +$('rsecs').value || 10)), chunks = [], fpsV = +$('fps').value;
   let stream = canvas.captureStream(0), vt = stream.getVideoTracks()[0], ft = null;
   if (vt && vt.requestFrame) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); else stream = canvas.captureStream(fpsV);
-  const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.round(8e6 * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.75))});
+  const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.min(60e6, Math.round(12e6 * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.9)))});
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const t0 = performance.now();
   const timer = setInterval(() => {
