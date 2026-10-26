@@ -36,6 +36,7 @@ ${p.rules.map(r => '- ' + r).join('\n')}
 function refreshPrompt() { $('tlabel').textContent = PTYPES[$('ptype').value].label; $('prompt').value = buildPrompt(); $('rsecs').value = $('secs').value; fr.style.aspectRatio = $('ratio').value.replace(':', '/'); }
 ['subject', 'ptype', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
 refreshPrompt();
+$('fps').value = '60'; // FPS default tinggi (60)
 
 function copyText(txt, ta) {
   if (navigator.clipboard) return navigator.clipboard.writeText(txt);
@@ -121,7 +122,7 @@ $('go').onclick = async () => {
   let stream = canvas.captureStream(0), vt = stream.getVideoTracks()[0], ft = null;
   const win = fr.contentWindow;
   if (vt && vt.requestFrame) { win.__vt = vt; win.__fps = fpsV; win.__hits = 0; setTimeout(() => { if (!win.__hits && !ft) ft = setInterval(() => vt.requestFrame(), 1000 / fpsV); }, 800); } else stream = canvas.captureStream(fpsV);
-  const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.min(60e6, Math.round(12e6 * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.9)))});
+  const rec = new MediaRecorder(stream, {mimeType: mime, videoBitsPerSecond: Math.min(80e6, Math.round(12e6 * (fpsV > 30 ? 1.5 : 1) * Math.pow(Math.max(1, rsz(canvas)[0] * rsz(canvas)[1] / 921600), 0.9)))});
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const t0 = performance.now();
   const timer = setInterval(() => {
