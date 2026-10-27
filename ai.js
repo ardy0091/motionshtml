@@ -19,6 +19,13 @@ const STYLES = {
   'minimalis': 'minimalis: banyak ruang kosong, satu atau dua warna, bentuk geometris sederhana, gerakan halus dan terukur',
   'neon': 'neon futuristik: latar sangat gelap, garis dan bentuk bercahaya (glow) dalam 2-3 warna neon, gerakan cepat dan tajam'
 };
+const PALETS = {
+  'merah - hitam - krem': 'merah tua #C8001A (dominan), hitam kemerahan #1A0005, krem #FFF8E7, salmon #F4A582 (aksen kecil)',
+  'biru malam - oranye': 'biru malam #0B1F4B (dominan), biru tengah #1E4FA3, krem #FFF3DC, oranye #FF8A2B (aksen kecil)',
+  'hijau zaitun - krem': 'hijau zaitun #4B5A2A (dominan), hijau tua #1E2A12, krem #F4EBD0, terakota #C8553D (aksen kecil)',
+  'ungu - pink - kuning': 'ungu #3B1A8F (dominan), ungu tua #160A3D, pink #FF5FA2, kuning #FFD23F (aksen kecil)',
+  'hitam - putih - emas': 'hitam #0B0B0B (dominan), putih tulang #F5F1E8, emas #C9A24B, abu gelap #3A3A3A'
+};
 const PTYPES = {
   visual: {label: 'Tema animasi', head: t => `Buatkan SATU file HTML lengkap untuk animasi motion graphics dengan tema: "${t}".`, rules: [
     'Fokus hanya pada animasi visual: bentuk, objek, warna, dan gerakan dengan easing yang halus.',
@@ -32,6 +39,12 @@ const PTYPES = {
     'Pakai palet 4-5 warna harmonis, shading dua nada yang lembut, dan satu highlight mengilap pada tiap bentuk besar. Garis tepi tipis atau tanpa garis tepi, sesuai gaya visual.',
     'Buat terasa hidup dengan cara yang ringan: muncul dengan pop (scale overshoot), lalu gerak idle berkelanjutan (bernapas, bergoyang, melayang), squash and stretch, gerak sekunder sederhana, dan maksimal sekitar 20 partikel atau percikan kecil.',
     'Tanpa teks. Fokus hanya pada subjek dan efeknya.']},
+  poster: {label: 'Konsep utama (subjek dan detail yang memantulkan adegan lain)', noStyle: true, head: t => `Buatkan SATU file HTML lengkap untuk animasi poster sinematik bergaya ilustrasi grafis datar (flat), dengan konsep utama: "${t}". Animasi terdiri dari 3 sampai 4 adegan yang tersambung mulus lewat gerakan kamera zoom (match cut).`, rules: [
+    'Gaya poster film klasik: bentuk datar bersiluet kuat, shading dua nada, TANPA gradasi halus dan tanpa outline tebal. Palet sangat terbatas (3-4 warna: satu warna dominan, satu gelap, satu krem terang, satu aksen). Semua detail dibangun dari bentuk geometris: lingkaran, persegi panjang, dan kurva Bezier.',
+    'Struktur adegan: (1) mulai dari subjek utama dengan satu detail yang memuat adegan berikutnya (misalnya pantulan di lensa kacamata, jendela, mata, cermin, atau layar); (2) kamera zoom masuk ke detail itu sampai memenuhi layar dan adegan berikutnya terungkap; (3) lanjutkan zoom ke detail lain di dalam adegan tersebut; (4) pada akhir siklus kembali ke adegan awal supaya loop mulus.',
+    'Implementasi kamera: buat tiap adegan sebagai fungsi drawScene yang menggambar adegan anak DI DALAM bagian tertentu (lensa, jendela) memakai ctx.save, translate, scale, dan clip. Kamera hanya satu transform (posisi dan skala) yang di-zoom dengan easing ease-in-out cubic dan interpolasi skala secara logaritmik (Math.exp dari lerp log). Dengan cara ini adegan anak otomatis membesar tanpa sambungan yang terlihat.',
+    'Gerak mikro agar hidup: kedipan mata, cahaya atau bayangan yang menyapu pelan, paralaks antar lapisan, kain atau rambut bergoyang halus.',
+    'Tanpa teks. Komposisi besar dan berani yang menyesuaikan rasio kanvas: untuk lanskap letakkan subjek di salah satu sisi dan detail fokus (lensa, jendela) agak di tengah, dan isi sisi lain dengan bentuk dekoratif datar dari palet yang sama. Seluruh siklus berlangsung tepat sesuai durasi yang diminta, dengan zoom pertama dimulai sekitar 10% waktu, dan di akhir siklus ada transisi halus kembali ke adegan awal.']},
   latar: {label: 'Tema latar', head: t => `Buatkan SATU file HTML lengkap untuk animasi LATAR BELAKANG abstrak yang bisa diulang tanpa putus (seamless loop), dengan tema: "${t}".`, rules: [
     'Tanpa teks sama sekali dan tanpa objek utama yang mencolok. Hanya pola, gradasi, partikel, gelombang, atau bentuk halus yang bergerak pelan.',
     'Awal dan akhir siklus harus identik (pakai fungsi sinus atau fase periodik) supaya loop tidak terlihat melompat.',
@@ -41,17 +54,17 @@ function buildPrompt() {
   const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value], bg = $('bgmode').value;
   const bodyBg = bg === 'transparan' ? 'transparent' : bg === 'hijau' ? '#00FF00' : '#000';
   const bgRule = bg === 'transparan'
-    ? '- LATAR HARUS TRANSPARAN: jangan mengisi latar dengan warna atau gradasi. Panggil ctx.clearRect(0, 0, canvas.width, canvas.height) setiap frame, lalu gambar hanya subjek dan efeknya. Tanpa bayangan jatuh ke latar. Aturan latar ini mengalahkan aturan latar pada gaya visual.\n'
+    ? '\n- LATAR HARUS TRANSPARAN: jangan mengisi latar dengan warna atau gradasi. Panggil ctx.clearRect(0, 0, canvas.width, canvas.height) setiap frame, lalu gambar hanya subjek dan efeknya. Tanpa bayangan jatuh ke latar. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
     : bg === 'hijau'
-    ? '- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada subjek dan efek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.\n'
+    ? '\n- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada subjek dan efek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
     : '';
-  return `${p.head($('subject').value)} Gaya visual: ${STYLES[$('style').value] || $('style').value}.
+  const palet = $('palet').value, paletRule = palet !== 'gaya' && PALETS[palet] ? `\n- PALET WARNA WAJIB (mengalahkan warna pada gaya visual): ${PALETS[palet]}. Jangan memakai warna di luar palet ini, kecuali turunan terang atau gelap dari warna yang sama.` : '';
+  return `${p.head($('subject').value)}${p.noStyle ? '' : ' Gaya visual: ' + (STYLES[$('style').value] || $('style').value) + '.'}
 
 Aturan wajib:
 - Semua dalam satu file (HTML + CSS + JavaScript). Tanpa library, font eksternal, atau gambar dari luar.
 - Gunakan tepat satu <canvas id="stage" width="${w}" height="${h}"> dan gambar semuanya dengan Canvas 2D (ctx). Jangan pakai animasi CSS atau elemen DOM untuk visual utama.
-- Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}
-${bgRule}
+- Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}${bgRule}${paletRule}
 - Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.
 - Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame.
 - Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
@@ -71,7 +84,7 @@ function bgUi() {
   if (tr) { $('fmt').value = 'webm'; setStatus('Latar transparan hanya bisa disimpan sebagai WebM (MP4 dan MOV tidak mendukung transparansi).'); }
 }
 function refreshPrompt() { $('tlabel').textContent = PTYPES[$('ptype').value].label; $('prompt').value = buildPrompt(); $('rsecs').value = $('secs').value; fr.style.aspectRatio = $('ratio').value.replace(':', '/'); }
-['subject', 'ptype', 'bgmode', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
+['subject', 'ptype', 'bgmode', 'palet', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
 refreshPrompt();
 $('fps').value = '60'; // FPS default tinggi (60)
 
@@ -262,3 +275,11 @@ $('code').addEventListener('input', updClr);
 $('clrcode').onclick = () => { $('code').value = ''; fr.srcdoc = ''; $('pb').style.width = '0'; setStatus('Kode dihapus. Tempel kode baru lalu klik Render video.'); updClr(); };
 $('bgmode').addEventListener('change', bgUi);
 bgUi();
+
+/* Jenis poster: rasio 16:9 dan durasi 10 detik dipilih otomatis (bisa diubah lagi) */
+$('ptype').addEventListener('change', () => {
+  if ($('ptype').value === 'poster') {
+    $('ratio').value = '16:9'; $('secs').value = '10'; refreshPrompt();
+    setStatus('Jenis poster: rasio 16:9 (lanskap) dan durasi 10 detik dipilih otomatis. Bisa diubah lagi.');
+  }
+});
