@@ -16,6 +16,10 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
 .bar2{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
 .bar2 i{display:block;height:100%;width:0;background:var(--acc)}
 #st{min-height:20px}
+.cc{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--field);display:flex;flex-direction:column;gap:8px}
+.cc h3{margin:0;font-size:15px}.cc p{margin:0;font-size:13px;line-height:1.55}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.sw{width:14px;height:14px;border-radius:50%;border:1px solid var(--line);display:inline-block}
 </style>
 </head>
 <body>
@@ -25,10 +29,25 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
 </header>
 <div class="wrap">
 
+  <section class="box" id="cgen">
+    <h2>Generator konsep kreatif</h2>
+    <p>Membuat konsep unik (judul dan deskripsi dalam bahasa Inggris) dari kombinasi kategori, struktur visual, bahasa desain, komposisi, palet, dan gerakan. Konsep yang sudah muncul tidak ditawarkan lagi.</p>
+    <div class="row3">
+      <div class="f"><label>Kategori</label><select id="cg-group"><option value="all">Semua (campur)</option><option value="abstract">Abstract &amp; Experimental</option><option value="overlay">Overlay &amp; Motion Elements</option><option value="opening">Opening &amp; Content Intro</option><option value="illustr">Illustration &amp; Artistic Motion</option><option value="bg">Background &amp; Seamless Loop</option></select></div>
+      <div class="f"><label>Jumlah konsep</label><input id="cg-count" type="number" min="1" max="10" value="5"></div>
+      <div class="f"><label>&nbsp;</label><button id="cg-go" class="pri" type="button">Buat konsep</button></div>
+    </div>
+    <div id="cg-out" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div id="cg-bar" style="display:none;gap:8px;flex-wrap:wrap"><button id="cg-copyall" type="button">Salin semua</button></div>
+    <p id="cg-hist"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="cg-exp" type="button">Ekspor riwayat</button><button id="cg-imp" type="button">Impor riwayat</button><button id="cg-clr" type="button">✕ Hapus riwayat konsep</button><input id="cg-file" type="file" accept=".json,application/json" style="display:none"></div>
+    <p style="font-size:12px">Riwayat disimpan di browser ini saja, jadi tidak permanen dan tidak ikut pindah ke perangkat lain. Pakai Ekspor riwayat untuk cadangan dan Impor riwayat untuk memulihkan.</p>
+  </section>
+
   <section class="box">
     <h2>1. Buat prompt untuk AI</h2>
     <p>Salin prompt ini ke ChatGPT, Claude, atau Gemini versi gratis. AI akan menulis kode HTML animasinya.</p>
-    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="visual">1. Animasi visual (tanpa teks)</option><option value="teks">2. Teks bergerak</option><option value="latar">3. Latar loop abstrak</option><option value="karakter">4. Karakter vektor trending 2026</option><option value="poster">5. Poster sinematik (zoom antar adegan)</option></select></div>
+    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="visual">1. Animasi visual (tanpa teks)</option><option value="teks">2. Teks bergerak</option><option value="latar">3. Latar loop abstrak</option><option value="karakter">4. Karakter vektor trending 2026</option><option value="poster">5. Poster sinematik (zoom antar adegan)</option><option value="konsep">6. Konsep kreatif (dari generator)</option></select></div>
     <div class="f"><label id="tlabel">Tema animasi</label><input id="subject" value="Kotak laporan cuaca kota malam hari dengan hujan"></div>
     <div id="hist" style="display:none;flex-direction:column;gap:8px"><div id="histlist" style="display:flex;flex-wrap:wrap;gap:6px"></div><button id="clrhist" type="button" style="align-self:flex-start;min-height:30px;padding:4px 12px;font-size:12px">✕ Hapus riwayat prompt</button></div>
     <div class="row3">
@@ -66,5 +85,6 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
 </div>
 <script src="mp4.js"></script>
 <script src="ai.js"></script>
+<script src="concepts.js"></script>
 </body>
 </html>
