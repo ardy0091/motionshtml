@@ -45,6 +45,27 @@ const PTYPES = {
     'Implementasi kamera: buat tiap adegan sebagai fungsi drawScene yang menggambar adegan anak DI DALAM bagian tertentu (lensa, jendela) memakai ctx.save, translate, scale, dan clip. Kamera hanya satu transform (posisi dan skala) yang di-zoom dengan easing ease-in-out cubic dan interpolasi skala secara logaritmik (Math.exp dari lerp log). Dengan cara ini adegan anak otomatis membesar tanpa sambungan yang terlihat.',
     'Gerak mikro agar hidup: kedipan mata, cahaya atau bayangan yang menyapu pelan, paralaks antar lapisan, kain atau rambut bergoyang halus.',
     'Tanpa teks. Komposisi besar dan berani yang menyesuaikan rasio kanvas: untuk lanskap letakkan subjek di salah satu sisi dan detail fokus (lensa, jendela) agak di tengah, dan isi sisi lain dengan bentuk dekoratif datar dari palet yang sama. Seluruh siklus berlangsung tepat sesuai durasi yang diminta, dengan zoom pertama dimulai sekitar 10% waktu, dan di akhir siklus ada transisi halus kembali ke adegan awal.']},
+  konsep: {label: 'Judul konsep (dari generator)', noStyle: true, custom: true,
+    head: t => {
+      const c = window.__concept;
+      if (!c) return `Buatkan SATU file HTML lengkap untuk animasi motion graphics 2D komersial (stock footage) berjudul "${t}". (Belum ada konsep dari generator. Gunakan tombol "Pakai konsep ini" agar spesifikasi lengkap ikut tertulis.)`;
+      return `Buatkan SATU file HTML lengkap untuk animasi motion graphics 2D komersial (stock footage) berjudul "${c.title}".\n\nSpesifikasi konsep (patuhi persis, jangan diganti dengan desain generik):\n- Kategori: ${c.group} / ${c.sub}\n- Jenis keluaran: ${c.out}\n- Struktur visual utama: ${c.struct}\n- Bahasa desain: ${c.lang} (${c.langLook})\n- Komposisi: ${c.comp} (${c.compDesc})\n- Palet warna (hex): ${c.pal} = ${c.hex.join(', ')}\n- Mekanisme gerak: ${c.motion}, yaitu elemen ${c.how}. Alasan visual: ${c.why}\n- Deskripsi animasi (English): ${c.desc}`;
+    },
+    rules: () => {
+      const o = window.__concept ? window.__concept.out : 'loop';
+      const byType = {
+        loop: 'Seamless loop: semua gerakan periodik dengan jumlah siklus bulat dalam durasi. Frame pertama dan terakhir identik, tanpa lompatan posisi, bentuk, atau warna.',
+        illustration: 'Adegan ilustrasi 2D dengan beberapa gerak ambient halus berirama berbeda (bukan hanya satu objek yang bergerak), dan loop menyambung mulus di akhir durasi.',
+        opening: 'Ini opening, BUKAN loop: awal hampir kosong, elemen tersusun atau terungkap, lalu sekitar 3 detik terakhir menahan komposisi akhir yang rapi dengan area tengah lapang untuk judul. Jangan mengulang dari awal.',
+        overlay: 'Ini overlay dengan LATAR TRANSPARAN (clearRect tiap frame): elemen hanya di tepi atau sudut, area tengah kosong. Elemen masuk di sekitar 1,5 detik pertama, bergerak halus, lalu keluar di 1,5 detik terakhir. Tanpa efek cahaya atau glow.',
+        transition: 'Ini transisi dengan LATAR TRANSPARAN: bentuk menyapu menutup seluruh bingkai sekitar detik 4-5, bertahan sebentar, lalu terbuka lagi sampai bingkai bersih (transparan) di akhir. Awal dan akhir tidak boleh ada elemen yang terlihat.'
+      };
+      return [byType[o] || byType.loop,
+        'Gunakan hanya warna dari palet di atas (boleh turunan terang atau gelap dari warna yang sama). Tanpa teks, huruf, logo, merek, atau watermark.',
+        'Ikuti struktur visual, komposisi, dan mekanisme gerak di atas. Jangan menjadikan objek berputar di tengah layar sebagai solusi default, dan jangan memakai zoom, putar, geser, atau membesar-mengecil kecuali memang diminta oleh mekanisme gerak.',
+        'Bentuk geometris rapi, garis dan kurva bersih, siluet jelas, hierarki visual jelas, tidak terlalu ramai, dan tidak ada objek yang terpotong tanpa sengaja. Gerakan halus dan natural tanpa flicker atau jitter, stabil minimal 30 FPS.',
+        'Periksa secara internal sebelum menjawab: sesuai spesifikasi, tidak ramai, tidak terpotong, tidak ada merek, dan loop atau transisi sudah benar.'];
+    }},
   latar: {label: 'Tema latar', head: t => `Buatkan SATU file HTML lengkap untuk animasi LATAR BELAKANG abstrak yang bisa diulang tanpa putus (seamless loop), dengan tema: "${t}".`, rules: [
     'Tanpa teks sama sekali dan tanpa objek utama yang mencolok. Hanya pola, gradasi, partikel, gelombang, atau bentuk halus yang bergerak pelan.',
     'Awal dan akhir siklus harus identik (pakai fungsi sinus atau fase periodik) supaya loop tidak terlihat melompat.',
@@ -59,6 +80,9 @@ function buildPrompt() {
     ? '\n- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada subjek dan efek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
     : '';
   const palet = $('palet').value, paletRule = palet !== 'gaya' && PALETS[palet] ? `\n- PALET WARNA WAJIB (mengalahkan warna pada gaya visual): ${PALETS[palet]}. Jangan memakai warna di luar palet ini, kecuali turunan terang atau gelap dari warna yang sama.` : '';
+  const genA = p.custom ? '' : '- Komposisi: isi seluruh bingkai. Elemen utama harus besar dan terbaca jelas dari jauh, margin tepi kecil dan seimbang. Jangan menampilkan antarmuka mini di sudut atau ruang kosong yang besar.\n- Kualitas profesional: grid dan jarak yang rapi, sudut membulat konsisten, bayangan lembut berlapis, palet maksimal 4 warna, hierarki visual yang jelas, serta kedalaman lewat lapisan. Gerakan berurutan (stagger) dengan easing halus (ease-out cubic atau expo), tanpa gerakan kaku.\n';
+  const genB = p.custom ? '' : '- Patuhi gaya visual di atas dengan setia. Jangan memakai tampilan dashboard gelap biru-navy dengan aksen teal kecuali gaya yang dipilih memintanya.\n';
+  const rules = typeof p.rules === 'function' ? p.rules() : p.rules;
   return `${p.head($('subject').value)}${p.noStyle ? '' : ' Gaya visual: ' + (STYLES[$('style').value] || $('style').value) + '.'}
 
 Aturan wajib:
@@ -67,14 +91,11 @@ Aturan wajib:
 - Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}${bgRule}${paletRule}
 - Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.
 - Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame.
-- Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
-${p.rules.map(r => '- ' + r).join('\n')}
+${p.custom ? '- Durasi total tepat ' + s + ' detik. Animasi berbasis waktu, ikuti aturan jenis keluaran di bawah.' : '- Durasi satu siklus sekitar ' + s + ' detik, lalu ulang dari awal (loop mulus).'}
+${rules.map(r => '- ' + r).join('\n')}
 - JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.
-- Komposisi: isi seluruh bingkai. Elemen utama harus besar dan terbaca jelas dari jauh, margin tepi kecil dan seimbang. Jangan menampilkan antarmuka mini di sudut atau ruang kosong yang besar.
-- Kualitas profesional: grid dan jarak yang rapi, sudut membulat konsisten, bayangan lembut berlapis, palet maksimal 4 warna, hierarki visual yang jelas, serta kedalaman lewat lapisan. Gerakan berurutan (stagger) dengan easing halus (ease-out cubic atau expo), tanpa gerakan kaku.
-- Jaga performa tetap ringan: elemen kecil atau partikel maksimal sekitar 40, hindari ctx.filter dan shadowBlur besar (di atas 20) pada banyak elemen, pakai bentuk sederhana.
-- Patuhi gaya visual di atas dengan setia. Jangan memakai tampilan dashboard gelap biru-navy dengan aksen teal kecuali gaya yang dipilih memintanya.
-- Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
+${genA}- Jaga performa tetap ringan: elemen kecil atau partikel maksimal sekitar 40, hindari ctx.filter dan shadowBlur besar (di atas 20) pada banyak elemen, pakai bentuk sederhana.
+${genB}- Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
 - Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".
 - Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.`;
 }
