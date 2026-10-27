@@ -10,9 +10,10 @@ const STYLES = {
   'gradasi mesh modern': 'modern dan berenergi: gradasi mesh berani (jingga, magenta, ungu), bentuk organik besar yang mengalir, kontras tinggi, elemen besar dan percaya diri, gerakan mengalir',
   'isometrik 3D': 'ilustrasi isometrik 3D ala startup teknologi: blok dan kartu 3D pada sudut isometrik, palet pastel dengan satu warna aksen cerah, bayangan lembut, gerakan perakitan yang rapi dan memuaskan',
   'editorial berani': 'editorial berani: blok warna datar besar (krem, hitam, satu warna cerah #FF4D2E), bentuk geometris tegas, kontras tinggi, gerakan cepat dan ritmis seperti motion graphics iklan',
-  'maskot vektor garis tebal': 'ilustrasi vektor maskot ala sticker atau emblem esports: garis tepi hitam tebal dan konsisten di semua bentuk, warna jenuh dengan kontras tinggi (magenta, hijau limau, ungu, biru elektrik, kuning, cyan), bayangan cel-shading dua nada, highlight putih mengilap, latar putih bersih atau gradasi cerah, efek aksen berupa percikan, serpihan, dan garis kilat yang memancar',
-  'sticker cerah glossy': 'sticker glossy yang ceria dan hidup: bentuk bulat tebal, outline tebal, warna permen cerah (pink, cyan, kuning, ungu), kilau mengilap, bayangan jatuh lembut, gerakan memantul lentur dengan squash and stretch',
-  'pop art komik': 'pop art komik: warna primer penuh dan kontras (merah, kuning, biru, magenta), outline hitam tebal, pola titik halftone, garis kecepatan dan ledakan aksen, gerakan cepat dengan jeda dramatis',
+  'vektor 3D kartun lembut 2026': 'vektor 3D kartun lembut (tren 2026): bentuk tebal dan menggembung seperti balon atau clay, tampak 3D tetapi tetap vektor, gradasi lembut dua nada di tiap bentuk, highlight bulat kecil mengilap, bayangan jatuh tipis, palet 4-5 warna cerah yang harmonis (misalnya koral, kuning mentega, biru langit, lavender), gerakan memantul lentur dan ramah',
+  'gambar tangan organik 2026': 'gambar tangan organik (tren 2026): garis vektor yang terasa digambar tangan dengan ketebalan sedikit bervariasi dan tepi tidak terlalu sempurna, bentuk datar dengan palet terbatas 4 warna hangat dan membumi (krem, terakota, hijau sage, kuning mustard), latar krem polos tanpa tekstur noise, gerakan lembut seperti gambar yang bernapas',
+  'retro-futuris datar 2026': 'retro-futuris warna datar (tren 2026): bentuk geometris tajam dan bersih (lingkaran, setengah lingkaran, garis, bintang), palet nostalgia (mustard, teal, koral, krem, biru tua) tanpa gradasi, komposisi simetris ala poster ruang angkasa tahun 70-an, gerakan berirama dan tegas',
+  'cyberpunk': 'cyberpunk ringan: latar ungu-hitam kota malam dengan siluet gedung, garis dan bentuk neon magenta (#FF2BD6), cyan (#00F0FF), dan kuning (#FCEE0A), efek cahaya dibuat dengan garis tebal berlapis semi-transparan (bukan shadowBlur besar), grid perspektif di lantai, hologram sederhana, efek glitch tipis dengan geser warna 2-4 piksel sesekali',
   'gelap sinematik': 'gelap sinematik: latar gelap dengan kontras tinggi, cahaya lembut dan vinyet halus, warna sangat terbatas, suasana dramatis namun bersih',
   'cerah berwarna': 'cerah dan ceria: warna penuh tetapi harmonis, bentuk bulat ramah, gerakan memantul ringan',
   'minimalis': 'minimalis: banyak ruang kosong, satu atau dua warna, bentuk geometris sederhana, gerakan halus dan terukur',
@@ -26,10 +27,10 @@ const PTYPES = {
     'Tampilkan HANYA teks di atas. Jangan menambah kata, subjudul, watermark, atau caption lain.',
     'Tiap baris atau kata masuk dengan animasi berbeda (slide, scale pantul, fade, putar), tertata rapi di tengah, mudah dibaca, dan keluar sebelum baris berikutnya muncul.',
     'Tambahkan elemen dekoratif sederhana (garis, bentuk, partikel) sebagai pendukung, tanpa teks tambahan.']},
-  maskot: {label: 'Subjek utama (karakter atau objek)', head: t => `Buatkan SATU file HTML lengkap untuk animasi SATU subjek utama (karakter, maskot, atau objek) bergaya ilustrasi vektor yang berwarna dan terasa hidup: "${t}".`, rules: [
-    'Gambar subjek di tengah dan besar (sekitar 60-70% tinggi bingkai), dibangun dari kurva Bezier dan bentuk yang berlapis: badan, detail, bayangan cel-shading dua nada, dan highlight putih mengilap.',
-    'Beri garis tepi hitam tebal yang konsisten pada semua bentuk (lineJoin dan lineCap bulat). Warna jenuh dan kontras tinggi, dengan latar putih bersih atau gradasi cerah.',
-    'Buat subjek terasa hidup: muncul dengan pop (scale overshoot), lalu gerak idle yang terus berjalan (bernapas, bergoyang, melayang), squash and stretch, gerak sekunder (tetesan, ekor, rambut, mahkota, daun), serta percikan, serpihan, atau garis efek yang memancar mengikuti aksinya.',
+  karakter: {label: 'Subjek utama (karakter atau objek)', head: t => `Buatkan SATU file HTML lengkap untuk animasi SATU karakter atau objek utama bergaya ilustrasi vektor tren 2026 yang ringan dan hidup: "${t}".`, rules: [
+    'Gambar subjek di tengah dan besar (sekitar 60% tinggi bingkai) dari bentuk sederhana yang berlapis: lingkaran, persegi membulat, dan kurva Bezier secukupnya, tanpa detail kecil yang berlebihan.',
+    'Pakai palet 4-5 warna harmonis, shading dua nada yang lembut, dan satu highlight mengilap pada tiap bentuk besar. Garis tepi tipis atau tanpa garis tepi, sesuai gaya visual.',
+    'Buat terasa hidup dengan cara yang ringan: muncul dengan pop (scale overshoot), lalu gerak idle berkelanjutan (bernapas, bergoyang, melayang), squash and stretch, gerak sekunder sederhana, dan maksimal sekitar 20 partikel atau percikan kecil.',
     'Tanpa teks. Fokus hanya pada subjek dan efeknya.']},
   latar: {label: 'Tema latar', head: t => `Buatkan SATU file HTML lengkap untuk animasi LATAR BELAKANG abstrak yang bisa diulang tanpa putus (seamless loop), dengan tema: "${t}".`, rules: [
     'Tanpa teks sama sekali dan tanpa objek utama yang mencolok. Hanya pola, gradasi, partikel, gelombang, atau bentuk halus yang bergerak pelan.',
@@ -37,13 +38,20 @@ const PTYPES = {
     'Kontras lembut, cocok dijadikan latar video atau layar belakang.']}
 };
 function buildPrompt() {
-  const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value];
+  const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value], bg = $('bgmode').value;
+  const bodyBg = bg === 'transparan' ? 'transparent' : bg === 'hijau' ? '#00FF00' : '#000';
+  const bgRule = bg === 'transparan'
+    ? '- LATAR HARUS TRANSPARAN: jangan mengisi latar dengan warna atau gradasi. Panggil ctx.clearRect(0, 0, canvas.width, canvas.height) setiap frame, lalu gambar hanya subjek dan efeknya. Tanpa bayangan jatuh ke latar. Aturan latar ini mengalahkan aturan latar pada gaya visual.\n'
+    : bg === 'hijau'
+    ? '- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada subjek dan efek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.\n'
+    : '';
   return `${p.head($('subject').value)} Gaya visual: ${STYLES[$('style').value] || $('style').value}.
 
 Aturan wajib:
 - Semua dalam satu file (HTML + CSS + JavaScript). Tanpa library, font eksternal, atau gambar dari luar.
 - Gunakan tepat satu <canvas id="stage" width="${w}" height="${h}"> dan gambar semuanya dengan Canvas 2D (ctx). Jangan pakai animasi CSS atau elemen DOM untuk visual utama.
-- Style: body{margin:0;background:#000} canvas{display:block;width:100%;height:auto}
+- Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}
+${bgRule}
 - Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.
 - Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame.
 - Durasi satu siklus sekitar ${s} detik, lalu ulang dari awal (loop mulus).
@@ -51,13 +59,19 @@ ${p.rules.map(r => '- ' + r).join('\n')}
 - JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.
 - Komposisi: isi seluruh bingkai. Elemen utama harus besar dan terbaca jelas dari jauh, margin tepi kecil dan seimbang. Jangan menampilkan antarmuka mini di sudut atau ruang kosong yang besar.
 - Kualitas profesional: grid dan jarak yang rapi, sudut membulat konsisten, bayangan lembut berlapis, palet maksimal 4 warna, hierarki visual yang jelas, serta kedalaman lewat lapisan. Gerakan berurutan (stagger) dengan easing halus (ease-out cubic atau expo), tanpa gerakan kaku.
+- Jaga performa tetap ringan: elemen kecil atau partikel maksimal sekitar 40, hindari ctx.filter dan shadowBlur besar (di atas 20) pada banyak elemen, pakai bentuk sederhana.
 - Patuhi gaya visual di atas dengan setia. Jangan memakai tampilan dashboard gelap biru-navy dengan aksen teal kecuali gaya yang dipilih memintanya.
 - Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
 - Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".
 - Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.`;
 }
+function bgUi() {
+  const tr = $('bgmode').value === 'transparan';
+  fr.style.background = tr ? 'repeating-conic-gradient(#bbb 0% 25%, #eee 0% 50%) 50% / 20px 20px' : '';
+  if (tr) { $('fmt').value = 'webm'; setStatus('Latar transparan hanya bisa disimpan sebagai WebM (MP4 dan MOV tidak mendukung transparansi).'); }
+}
 function refreshPrompt() { $('tlabel').textContent = PTYPES[$('ptype').value].label; $('prompt').value = buildPrompt(); $('rsecs').value = $('secs').value; fr.style.aspectRatio = $('ratio').value.replace(':', '/'); }
-['subject', 'ptype', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
+['subject', 'ptype', 'bgmode', 'res', 'ratio', 'secs', 'style'].forEach(id => $(id).addEventListener('input', refreshPrompt));
 refreshPrompt();
 $('fps').value = '60'; // FPS default tinggi (60)
 
@@ -67,7 +81,7 @@ function copyText(txt, ta) {
 }
 $('copy').onclick = () => copyText($('prompt').value, $('prompt')).then(() => { $('copy').textContent = 'Tersalin ✓'; setTimeout(() => $('copy').textContent = 'Salin prompt', 1800); });
 $('paste').onclick = async () => {
-  try { $('code').value = await navigator.clipboard.readText(); } catch (e) { setStatus('Izin clipboard ditolak. Tempel manual dengan menekan lama di kolom kode.', true); }
+  try { $('code').value = await navigator.clipboard.readText(); updClr(); } catch (e) { setStatus('Izin clipboard ditolak. Tempel manual dengan menekan lama di kolom kode.', true); }
 };
 
 function setStatus(msg, err) { $('st').textContent = msg; $('st').style.color = err ? '#e5484d' : ''; }
@@ -187,6 +201,7 @@ async function exportFastAI(fmt) {
 }
 $('go').onclick = async () => {
   if (!$('code').value.trim()) return setStatus('Kolom kode masih kosong.', true);
+  if ($('bgmode').value === 'transparan') $('fmt').value = 'webm';
   if ($('fast').checked && $('fmt').value !== 'webm' && window.VideoEncoder && window.VideoFrame && await exportFastAI($('fmt').value)) return;
   if (!window.MediaRecorder) return setStatus('Browser tidak mendukung perekaman. Gunakan Chrome atau Edge.', true);
   const webm = ['video/webm;codecs=vp9', 'video/webm'];
@@ -219,3 +234,31 @@ $('go').onclick = async () => {
   rec.start(250);
   setTimeout(() => rec.stop(), secs * 1000);
 };
+
+/* ---------- riwayat tema & hapus kode ---------- */
+const HK = 'motionstudio.subjects';
+function loadHist() { try { return JSON.parse(localStorage.getItem(HK) || '[]'); } catch (e) { return []; } }
+function drawHist() {
+  const h = loadHist(); $('hist').style.display = h.length ? 'flex' : 'none'; $('histlist').innerHTML = '';
+  h.forEach(v => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = v.length > 42 ? v.slice(0, 42) + '…' : v; b.title = v;
+    b.style.cssText = 'min-height:30px;padding:4px 12px;font-size:12px;border-radius:999px'; b.onclick = () => { $('subject').value = v; refreshPrompt(); };
+    $('histlist').appendChild(b);
+  });
+}
+function saveHist(v) {
+  v = (v || '').trim(); if (!v) return;
+  const h = [v].concat(loadHist().filter(x => x !== v)).slice(0, 8);
+  try { localStorage.setItem(HK, JSON.stringify(h)); } catch (e) {}
+  drawHist();
+}
+$('clrhist').onclick = () => { try { localStorage.removeItem(HK); } catch (e) {} drawHist(); };
+$('copy').addEventListener('click', () => saveHist($('subject').value));
+$('go').addEventListener('click', () => saveHist($('subject').value));
+drawHist();
+
+function updClr() { $('clrcode').style.display = $('code').value ? '' : 'none'; }
+$('code').addEventListener('input', updClr);
+$('clrcode').onclick = () => { $('code').value = ''; fr.srcdoc = ''; $('pb').style.width = '0'; setStatus('Kode dihapus. Tempel kode baru lalu klik Render video.'); updClr(); };
+$('bgmode').addEventListener('change', bgUi);
+bgUi();
