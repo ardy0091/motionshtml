@@ -28,7 +28,7 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
   <section class="box">
     <h2>1. Buat prompt untuk AI</h2>
     <p>Salin prompt ini ke ChatGPT, Claude, atau Gemini versi gratis. AI akan menulis kode HTML animasinya.</p>
-    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="visual">1. Animasi visual (tanpa teks)</option><option value="teks">2. Teks bergerak</option><option value="latar">3. Latar loop abstrak</option><option value="karakter">4. Karakter vektor trending 2026</option></select></div>
+    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="visual">1. Animasi visual (tanpa teks)</option><option value="teks">2. Teks bergerak</option><option value="latar">3. Latar loop abstrak</option><option value="karakter">4. Karakter vektor trending 2026</option><option value="poster">5. Poster sinematik (zoom antar adegan)</option></select></div>
     <div class="f"><label id="tlabel">Tema animasi</label><input id="subject" value="Kotak laporan cuaca kota malam hari dengan hujan"></div>
     <div id="hist" style="display:none;flex-direction:column;gap:8px"><div id="histlist" style="display:flex;flex-wrap:wrap;gap:6px"></div><button id="clrhist" type="button" style="align-self:flex-start;min-height:30px;padding:4px 12px;font-size:12px">✕ Hapus riwayat prompt</button></div>
     <div class="row3">
@@ -37,6 +37,7 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
       <div class="f"><label>Durasi (detik)</label><input id="secs" type="number" min="2" max="60" value="10"></div>
       <div class="f"><label>Gaya</label><select id="style"><option>korporat bersih</option><option>glassmorphism</option><option>fintech premium</option><option>gradasi mesh modern</option><option>isometrik 3D</option><option>editorial berani</option><option>vektor 3D kartun lembut 2026</option><option>gambar tangan organik 2026</option><option>retro-futuris datar 2026</option><option>cyberpunk</option><option>gelap sinematik</option><option>cerah berwarna</option><option>minimalis</option><option>neon</option></select></div>
       <div class="f"><label>Latar</label><select id="bgmode"><option value="gaya">Sesuai gaya</option><option value="transparan">Transparan (WebM)</option><option value="hijau">Hijau (chroma key)</option></select></div>
+      <div class="f"><label>Palet warna</label><select id="palet"><option value="gaya">Sesuai gaya</option><option>merah - hitam - krem</option><option>biru malam - oranye</option><option>hijau zaitun - krem</option><option>ungu - pink - kuning</option><option>hitam - putih - emas</option></select></div>
     </div>
     <label style="display:flex;gap:6px;align-items:center;color:var(--mute)"><input id="force" type="checkbox" checked> Paksa resolusi sesuai pilihan (canvas diperbesar otomatis)</label>
     <textarea id="prompt" readonly></textarea>
