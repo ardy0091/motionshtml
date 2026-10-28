@@ -3,101 +3,111 @@ const $ = id => document.getElementById(id);
 function dims() { const h = +$('res').value, r = $('ratio').value; return r === '16:9' ? [Math.round(h * 16 / 9), h] : r === '9:16' ? [h, Math.round(h * 16 / 9)] : [h, h]; }
 const fr = $('fr');
 
-const STYLES = {
-  'korporat bersih': 'korporat bersih dan profesional ala produk SaaS premium: latar putih keabuan sangat muda (#F6F8FB), kartu putih dengan sudut membulat 16px dan bayangan lembut berlapis, satu warna aksen biru royal (#2563EB) ditambah abu netral, ikon garis tipis konsisten, gerakan tenang dan presisi',
-  'glassmorphism': 'glassmorphism modern: latar gradasi mesh lembut (biru, ungu, merah muda), panel kaca semi-transparan (putih 12-20%) dengan blur dan garis tepi putih 1px, kedalaman berlapis, cahaya lembut di sudut',
-  'fintech premium': 'fintech premium dan mewah: latar hitam arang (#0B0B0F), aksen emas champagne (#C9A46B) dan putih hangat, garis tipis presisi, kartu dengan gradasi halus, warna sangat terbatas, kesan eksklusif dan tenang',
-  'gradasi mesh modern': 'modern dan berenergi: gradasi mesh berani (jingga, magenta, ungu), bentuk organik besar yang mengalir, kontras tinggi, elemen besar dan percaya diri, gerakan mengalir',
-  'isometrik 3D': 'ilustrasi isometrik 3D ala startup teknologi: blok dan kartu 3D pada sudut isometrik, palet pastel dengan satu warna aksen cerah, bayangan lembut, gerakan perakitan yang rapi dan memuaskan',
-  'editorial berani': 'editorial berani: blok warna datar besar (krem, hitam, satu warna cerah #FF4D2E), bentuk geometris tegas, kontras tinggi, gerakan cepat dan ritmis seperti motion graphics iklan',
-  'vektor 3D kartun lembut 2026': 'vektor 3D kartun lembut (tren 2026): bentuk tebal dan menggembung seperti balon atau clay, tampak 3D tetapi tetap vektor, gradasi lembut dua nada di tiap bentuk, highlight bulat kecil mengilap, bayangan jatuh tipis, palet 4-5 warna cerah yang harmonis (misalnya koral, kuning mentega, biru langit, lavender), gerakan memantul lentur dan ramah',
-  'gambar tangan organik 2026': 'gambar tangan organik (tren 2026): garis vektor yang terasa digambar tangan dengan ketebalan sedikit bervariasi dan tepi tidak terlalu sempurna, bentuk datar dengan palet terbatas 4 warna hangat dan membumi (krem, terakota, hijau sage, kuning mustard), latar krem polos tanpa tekstur noise, gerakan lembut seperti gambar yang bernapas',
-  'retro-futuris datar 2026': 'retro-futuris warna datar (tren 2026): bentuk geometris tajam dan bersih (lingkaran, setengah lingkaran, garis, bintang), palet nostalgia (mustard, teal, koral, krem, biru tua) tanpa gradasi, komposisi simetris ala poster ruang angkasa tahun 70-an, gerakan berirama dan tegas',
-  'cyberpunk': 'cyberpunk ringan: latar ungu-hitam kota malam dengan siluet gedung, garis dan bentuk neon magenta (#FF2BD6), cyan (#00F0FF), dan kuning (#FCEE0A), efek cahaya dibuat dengan garis tebal berlapis semi-transparan (bukan shadowBlur besar), grid perspektif di lantai, hologram sederhana, efek glitch tipis dengan geser warna 2-4 piksel sesekali',
-  'gelap sinematik': 'gelap sinematik: latar gelap dengan kontras tinggi, cahaya lembut dan vinyet halus, warna sangat terbatas, suasana dramatis namun bersih',
-  'cerah berwarna': 'cerah dan ceria: warna penuh tetapi harmonis, bentuk bulat ramah, gerakan memantul ringan',
-  'minimalis': 'minimalis: banyak ruang kosong, satu atau dua warna, bentuk geometris sederhana, gerakan halus dan terukur',
-  'neon': 'neon futuristik: latar sangat gelap, garis dan bentuk bercahaya (glow) dalam 2-3 warna neon, gerakan cepat dan tajam'
-};
 const PALETS = {
-  'merah - hitam - krem': 'merah tua #C8001A (dominan), hitam kemerahan #1A0005, krem #FFF8E7, salmon #F4A582 (aksen kecil)',
-  'biru malam - oranye': 'biru malam #0B1F4B (dominan), biru tengah #1E4FA3, krem #FFF3DC, oranye #FF8A2B (aksen kecil)',
-  'hijau zaitun - krem': 'hijau zaitun #4B5A2A (dominan), hijau tua #1E2A12, krem #F4EBD0, terakota #C8553D (aksen kecil)',
-  'ungu - pink - kuning': 'ungu #3B1A8F (dominan), ungu tua #160A3D, pink #FF5FA2, kuning #FFD23F (aksen kecil)',
-  'hitam - putih - emas': 'hitam #0B0B0B (dominan), putih tulang #F5F1E8, emas #C9A24B, abu gelap #3A3A3A'
+  'Electric Blue': ['#0B1E3F', '#1E6BFF', '#5CC8FF', '#EAF4FF'],
+  'Teal Mint': ['#0E2A2F', '#14B8A6', '#A7F3D0', '#F0FDFA'],
+  'Cyan Circuit': ['#07111F', '#00E5FF', '#1E90FF', '#D6F7FF'],
+  'Mono Blueprint': ['#0B3D91', '#FFFFFF', '#7FB3FF', '#CFE3FF'],
+  'Sunset Retro': ['#1F2A44', '#FF8A3D', '#F4E3C1', '#2BB3A3'],
+  'Mono Contrast': ['#0A0A0A', '#FFFFFF', '#8A8A8A'],
+  'Corporate Blue': ['#0F3D8C', '#3B82F6', '#E5E7EB', '#111827'],
+  'Editorial Red-Blue': ['#101820', '#FF4D2E', '#2F5BFF', '#F5F0E6'],
+  'Neon Magenta': ['#12081F', '#FF2BD6', '#00F0FF', '#FCEE0A'],
+  'Lab Paper': ['#FAF7F0', '#1F2937', '#D9534F', '#2E86AB'],
+  'Safety Industrial': ['#2B2B2B', '#FFC400', '#FF7A00', '#BFC4C9'],
+  'Primary Geometric': ['#1D3557', '#E63946', '#F1C453', '#F1FAEE'],
+  'Dark Gold': ['#0D0D12', '#C9A24B', '#4B6BFF', '#E8E6DF'],
+  'Clean White': ['#FFFFFF', '#1E6BFF', '#FF7A59', '#E5E7EB']
 };
+const STYLES = {
+  'Modern Flat Technology Vector': {look: 'solid flat fills, consistent rounded corners, one bright accent colour and thin flat offset shadows with no gradients', pals: ['Electric Blue', 'Teal Mint']},
+  'Futuristic Technical Illustration': {look: 'fine precise lines, technical panels and a restrained cyan accent drawn as double strokes rather than blur, still completely flat', pals: ['Cyan Circuit', 'Electric Blue']},
+  'Minimalist Technology Vector': {look: 'very few shapes, generous negative space, uniform line weight and a single accent colour', pals: ['Clean White', 'Mono Contrast']},
+  'Isometric 2D Technology Illustration': {look: 'isometric projection drawn as flat parallelograms with three flat tones per object (no real 3D, no perspective, no gradients)', pals: ['Corporate Blue', 'Primary Geometric']},
+  'Technical Blueprint Vector': {look: 'deep blueprint-blue field, thin white and cyan lines, a faint grid and dimension ticks without numbers', pals: ['Mono Blueprint', 'Cyan Circuit']},
+  'Retro Futuristic Technology': {look: 'nostalgic orange, cream and teal on navy, rounded 1970s-80s forms, all flat fills', pals: ['Sunset Retro']},
+  'High Contrast Monochrome Technology': {look: 'black, white and one mid grey only, with strong silhouettes', pals: ['Mono Contrast']},
+  'Corporate Technology Illustration': {look: 'clean business-friendly blues and greys, simple flat icons and cards, calm and trustworthy', pals: ['Corporate Blue', 'Clean White']},
+  'Editorial Technology Vector': {look: 'large bold shapes, decisive crops inside safe margins, two dominant colours and one accent, like a magazine spread', pals: ['Editorial Red-Blue', 'Primary Geometric']},
+  'Cyberpunk Flat Vector': {look: 'purple-black field with magenta and cyan, thick solid neon-coloured lines (no blur), flat city and circuit silhouettes', pals: ['Neon Magenta']},
+  'Scientific Diagram Animation': {look: 'lab-paper background, thin dark linework, colour coding per part, leader lines and scale ticks without text', pals: ['Lab Paper']},
+  'Industrial Technical Vector': {look: 'safety yellow, orange and graphite, sturdy shapes, hazard stripes, bolts and panels', pals: ['Safety Industrial']},
+  'Geometric Technology Illustration': {look: 'devices reduced to pure geometry (circles, triangles, squares) in a limited palette', pals: ['Primary Geometric', 'Electric Blue']},
+  'Premium Dark Technology Vector': {look: 'deep charcoal field with gold or electric-blue accents, fine lines and a calm exclusive mood without heavy glow', pals: ['Dark Gold', 'Cyan Circuit']},
+  'Clean White Background Technology': {look: 'pure white (#FFFFFF) background with flat coloured objects and thin flat contact shadows, ideal for stock', pals: ['Clean White', 'Corporate Blue']}
+};
+const TECH_COMMON = [
+  'Ilustrasi 2D murni dari bentuk dan path Canvas (fill, stroke, arc, bezier). DILARANG: rendering atau model 3D, perspektif 3D, ekstrusi, bevel, gradasi atau bayangan yang mensimulasikan volume 3D, objek fotorealistik, dan tekstur noise.',
+  'Perangkat teknologi harus mudah dikenali: gambar komponen nyata (bukan hanya lingkaran, kotak, dan garis acak) dengan detail teknis secukupnya seperti sekrup, port, sirip pendingin, pin, lensa, kabel, atau rel. Detail komponen konsisten di seluruh objek.',
+  'Kualitas: garis dan kurva presisi, warna profesional, hierarki visual jelas, negative space seimbang, transisi halus. Tidak ada flicker, jitter, atau elemen bertabrakan, dan seluruh objek utama tetap terlihat penuh di dalam bingkai.',
+  'Jangan terlalu sering memakai dashboard, panel UI, progress bar, atau grafik data. Utamakan objek teknologi dan proses visualnya.',
+  'Gerak harus sesuai fungsi objek (sinyal merambat, perakitan, pemindaian, perutean paket data, orbit, aliran energi, dan sebagainya). Jangan memakai rotasi, zoom, atau gerakan partikel yang sama untuk semua elemen.',
+  'Tanpa teks, huruf, angka, merek, logo, atau watermark.'
+];
 const PTYPES = {
-  visual: {label: 'Tema animasi', head: t => `Buatkan SATU file HTML lengkap untuk animasi motion graphics dengan tema: "${t}".`, rules: [
-    'Fokus hanya pada animasi visual: bentuk, objek, warna, dan gerakan dengan easing yang halus.',
-    'JANGAN menampilkan teks, judul, label, angka, watermark, atau caption apa pun, kecuali tema di atas secara eksplisit memintanya.']},
-  teks: {label: 'Teks yang ditampilkan (pisahkan baris dengan |)', head: t => `Buatkan SATU file HTML lengkap untuk animasi teks bergerak (kinetic typography). Teks yang ditampilkan, persis seperti ini dan tanpa tambahan apa pun: "${t}". Tanda | memisahkan tiap baris atau kata yang muncul bergantian.`, rules: [
-    'Tampilkan HANYA teks di atas. Jangan menambah kata, subjudul, watermark, atau caption lain.',
-    'Tiap baris atau kata masuk dengan animasi berbeda (slide, scale pantul, fade, putar), tertata rapi di tengah, mudah dibaca, dan keluar sebelum baris berikutnya muncul.',
-    'Tambahkan elemen dekoratif sederhana (garis, bentuk, partikel) sebagai pendukung, tanpa teks tambahan.']},
-  karakter: {label: 'Subjek utama (karakter atau objek)', head: t => `Buatkan SATU file HTML lengkap untuk animasi SATU karakter atau objek utama bergaya ilustrasi vektor tren 2026 yang ringan dan hidup: "${t}".`, rules: [
-    'Gambar subjek di tengah dan besar (sekitar 60% tinggi bingkai) dari bentuk sederhana yang berlapis: lingkaran, persegi membulat, dan kurva Bezier secukupnya, tanpa detail kecil yang berlebihan.',
-    'Pakai palet 4-5 warna harmonis, shading dua nada yang lembut, dan satu highlight mengilap pada tiap bentuk besar. Garis tepi tipis atau tanpa garis tepi, sesuai gaya visual.',
-    'Buat terasa hidup dengan cara yang ringan: muncul dengan pop (scale overshoot), lalu gerak idle berkelanjutan (bernapas, bergoyang, melayang), squash and stretch, gerak sekunder sederhana, dan maksimal sekitar 20 partikel atau percikan kecil.',
-    'Tanpa teks. Fokus hanya pada subjek dan efeknya.']},
-  poster: {label: 'Konsep utama (subjek dan detail yang memantulkan adegan lain)', noStyle: true, head: t => `Buatkan SATU file HTML lengkap untuk animasi poster sinematik bergaya ilustrasi grafis datar (flat), dengan konsep utama: "${t}". Animasi terdiri dari 3 sampai 4 adegan yang tersambung mulus lewat gerakan kamera zoom (match cut).`, rules: [
-    'Gaya poster film klasik: bentuk datar bersiluet kuat, shading dua nada, TANPA gradasi halus dan tanpa outline tebal. Palet sangat terbatas (3-4 warna: satu warna dominan, satu gelap, satu krem terang, satu aksen). Semua detail dibangun dari bentuk geometris: lingkaran, persegi panjang, dan kurva Bezier.',
-    'Struktur adegan: (1) mulai dari subjek utama dengan satu detail yang memuat adegan berikutnya (misalnya pantulan di lensa kacamata, jendela, mata, cermin, atau layar); (2) kamera zoom masuk ke detail itu sampai memenuhi layar dan adegan berikutnya terungkap; (3) lanjutkan zoom ke detail lain di dalam adegan tersebut; (4) pada akhir siklus kembali ke adegan awal supaya loop mulus.',
-    'Implementasi kamera: buat tiap adegan sebagai fungsi drawScene yang menggambar adegan anak DI DALAM bagian tertentu (lensa, jendela) memakai ctx.save, translate, scale, dan clip. Kamera hanya satu transform (posisi dan skala) yang di-zoom dengan easing ease-in-out cubic dan interpolasi skala secara logaritmik (Math.exp dari lerp log). Dengan cara ini adegan anak otomatis membesar tanpa sambungan yang terlihat.',
-    'Gerak mikro agar hidup: kedipan mata, cahaya atau bayangan yang menyapu pelan, paralaks antar lapisan, kain atau rambut bergoyang halus.',
-    'Tanpa teks. Komposisi besar dan berani yang menyesuaikan rasio kanvas: untuk lanskap letakkan subjek di salah satu sisi dan detail fokus (lensa, jendela) agak di tengah, dan isi sisi lain dengan bentuk dekoratif datar dari palet yang sama. Seluruh siklus berlangsung tepat sesuai durasi yang diminta, dengan zoom pertama dimulai sekitar 10% waktu, dan di akhir siklus ada transisi halus kembali ke adegan awal.']},
-  konsep: {label: 'Judul konsep (dari generator)', noStyle: true, custom: true,
-    head: t => {
-      const c = window.__concept;
-      if (!c) return `Buatkan SATU file HTML lengkap untuk animasi motion graphics 2D komersial (stock footage) berjudul "${t}". (Belum ada konsep dari generator. Gunakan tombol "Pakai konsep ini" agar spesifikasi lengkap ikut tertulis.)`;
-      return `Buatkan SATU file HTML lengkap untuk animasi motion graphics 2D komersial (stock footage) berjudul "${c.title}".\n\nSpesifikasi konsep (patuhi persis, jangan diganti dengan desain generik):\n- Kategori: ${c.group} / ${c.sub}\n- Jenis keluaran: ${c.out}\n- Struktur visual utama: ${c.struct}\n- Bahasa desain: ${c.lang} (${c.langLook})\n- Komposisi: ${c.comp} (${c.compDesc})\n- Palet warna (hex): ${c.pal} = ${c.hex.join(', ')}\n- Mekanisme gerak: ${c.motion}, yaitu elemen ${c.how}. Alasan visual: ${c.why}\n- Deskripsi animasi (English): ${c.desc}`;
+  proses: {label: 'Subjek teknologi (objek dan prosesnya)', loop: false,
+    head: t => `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi bertipe PROSES: menjelaskan cara kerja "${t}" dari awal sampai hasil.`,
+    rules: () => ['Struktur wajib tiga babak (proporsi terhadap durasi): (1) 0-30%: komponen utama muncul dan siap, masukan (input) masuk; (2) 30-75%: proses berjalan dalam 3-4 tahap berurutan, tiap tahap punya sebab dan akibat yang terlihat (komponen bergerak, berubah warna atau status); (3) 75-100%: hasil keluaran terlihat jelas dan animasi berhenti pada keadaan akhir yang rapi.',
+      'Ini proses linear: jangan dipaksa menjadi loop. Awal dan akhir boleh berbeda.',
+      'Tampilkan alur input, proses, lalu output dengan arah gerak yang konsisten (misalnya kiri ke kanan).']},
+  perangkat: {label: 'Subjek teknologi (perangkat atau mesin)', loop: false,
+    head: t => `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi bertipe PERANGKAT: satu perangkat atau mesin "${t}" yang bergerak sesuai fungsinya.`,
+    rules: () => ['Satu perangkat utama menjadi pusat (sekitar 50-65% tinggi bingkai), digambar dari bagian yang mudah dikenali (rangka, penggerak, sensor, kabel, panel) dengan detail komponen konsisten.',
+      'Bagian bergerak dengan artikulasi masuk akal: ada poros, engsel, rel, atau roda yang menjadi alasan gerak, dan tiap gerak punya penyebab mekanis atau elektrik yang terlihat.',
+      'Tampilkan siklus kerja perangkat: siap, beroperasi, lalu selesai. Gunakan tampak samping, potongan (cutaway), atau tampak depan, tanpa perspektif.']},
+  sistem: {label: 'Subjek teknologi (sistem dan komponennya)', loop: false,
+    head: t => `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi bertipe SISTEM: memvisualisasikan hubungan antarkomponen pada "${t}".`,
+    rules: () => ['Gambar 5-9 komponen yang berbeda bentuk dan fungsinya sebagai node, dihubungkan jalur atau kabel yang jelas, dengan hierarki penempatan (sumber di satu sisi, tujuan di sisi lain, pengatur di tengah).',
+      'Aliran (paket data, daya, sinyal, atau material) bergerak di jalur sesuai topologi, dengan percabangan, penggabungan, dan antrean yang terlihat.',
+      'Tunjukkan satu peristiwa sistem dengan urutan sebab-akibat: beban meningkat, komponen gagal lalu dialihkan, atau sinkronisasi tercapai.',
+      'Jangan membuat dashboard, panel UI, atau grafik data. Pakai objek teknologi dan jalur fisik atau skematik.']},
+  ilmiah: {label: 'Subjek teknologi (proses ilmiah atau teknis)', loop: false,
+    head: t => `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi bertipe ILMIAH: diagram ilmiah dan teknis dari "${t}".`,
+    rules: () => ['Gaya diagram ilmiah: penampang (cross-section), tampak terurai (exploded 2D), atau skema, dengan garis penunjuk, penanda ukuran, dan skala berupa garis atau titik, tanpa teks dan tanpa angka.',
+      'Visualisasikan proses ilmiah atau teknis secara bertahap (misalnya pengukuran, reaksi, aliran partikel atau cahaya) dengan kode warna konsisten per bagian.',
+      'Akurasi teknis lebih penting daripada dekorasi: bentuk dan urutan harus sesuai cara kerja sebenarnya pada tingkat konsep.',
+      'Satu fokus utama di tengah, dengan elemen pendukung kecil dan tertata.']},
+  loop: {label: 'Subjek teknologi (animasi yang berulang)', loop: true,
+    head: t => `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi bertipe SEAMLESS LOOP: animasi "${t}" yang berulang sempurna.`,
+    rules: () => ['Seamless loop WAJIB: semua gerakan periodik dengan jumlah siklus bulat dalam durasi. Keadaan frame terakhir identik dengan frame pertama, tanpa lompatan posisi, bentuk, atau warna.',
+      'Rancang siklus tertutup yang masuk akal secara teknis (aliran terus-menerus, putaran mekanis, denyut sinyal, atau siklus kerja yang kembali ke posisi awal).',
+      'Gabungkan 2-3 gerakan berbeda dengan periode yang membagi durasi dengan rapi, bukan satu objek yang hanya berputar atau berdenyut di tengah layar.',
+      'Aman diulang berkali-kali sebagai latar: komposisi stabil dan area tengah tidak terlalu ramai.']},
+  konsep: {label: 'Judul konsep (dari generator)', concept: true,
+    head: (t, c) => {
+      if (!c) return `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi berjudul "${t}". (Belum ada konsep dari generator. Gunakan tombol "Pakai konsep ini" agar spesifikasi lengkap ikut tertulis.)`;
+      return `Buatkan SATU file HTML lengkap untuk animasi ilustrasi vektor 2D teknologi (commercial stock footage) berjudul "${c.title}".\n\nSpesifikasi konsep (patuhi persis, jangan diganti dengan desain generik):\n- Kategori: ${c.cat}\n- Objek teknologi utama: ${c.object}\n- Fungsi teknologi: ${c.fn}\n- Komponen visual wajib: ${c.components.join(', ')}\n- Mekanisme gerak: ${c.motion}, yaitu ${c.how}\n- Tata letak: ${c.layout}\n- Urutan animasi: ${c.steps.join(' | ')}\n- Gaya: ${c.style} (${c.styleLook})\n- Palet warna: ${c.pal} = ${c.hex.join(', ')}\n- Penggunaan komersial: ${c.use}\n- Deskripsi lengkap (English): ${c.desc}`;
     },
-    rules: () => {
-      const o = window.__concept ? window.__concept.out : 'loop';
-      const byType = {
-        loop: 'Seamless loop: semua gerakan periodik dengan jumlah siklus bulat dalam durasi. Frame pertama dan terakhir identik, tanpa lompatan posisi, bentuk, atau warna.',
-        illustration: 'Adegan ilustrasi 2D dengan beberapa gerak ambient halus berirama berbeda (bukan hanya satu objek yang bergerak), dan loop menyambung mulus di akhir durasi.',
-        opening: 'Ini opening, BUKAN loop: awal hampir kosong, elemen tersusun atau terungkap, lalu sekitar 3 detik terakhir menahan komposisi akhir yang rapi dengan area tengah lapang untuk judul. Jangan mengulang dari awal.',
-        overlay: 'Ini overlay dengan LATAR TRANSPARAN (clearRect tiap frame): elemen hanya di tepi atau sudut, area tengah kosong. Elemen masuk di sekitar 1,5 detik pertama, bergerak halus, lalu keluar di 1,5 detik terakhir. Tanpa efek cahaya atau glow.',
-        transition: 'Ini transisi dengan LATAR TRANSPARAN: bentuk menyapu menutup seluruh bingkai sekitar detik 4-5, bertahan sebentar, lalu terbuka lagi sampai bingkai bersih (transparan) di akhir. Awal dan akhir tidak boleh ada elemen yang terlihat.'
-      };
-      return [byType[o] || byType.loop,
-        'Gunakan hanya warna dari palet di atas (boleh turunan terang atau gelap dari warna yang sama). Tanpa teks, huruf, logo, merek, atau watermark.',
-        'Ikuti struktur visual, komposisi, dan mekanisme gerak di atas. Jangan menjadikan objek berputar di tengah layar sebagai solusi default, dan jangan memakai zoom, putar, geser, atau membesar-mengecil kecuali memang diminta oleh mekanisme gerak.',
-        'Bentuk geometris rapi, garis dan kurva bersih, siluet jelas, hierarki visual jelas, tidak terlalu ramai, dan tidak ada objek yang terpotong tanpa sengaja. Gerakan halus dan natural tanpa flicker atau jitter, stabil minimal 30 FPS.',
-        'Periksa secara internal sebelum menjawab: sesuai spesifikasi, tidak ramai, tidak terpotong, tidak ada merek, dan loop atau transisi sudah benar.'];
-    }},
-  latar: {label: 'Tema latar', head: t => `Buatkan SATU file HTML lengkap untuk animasi LATAR BELAKANG abstrak yang bisa diulang tanpa putus (seamless loop), dengan tema: "${t}".`, rules: [
-    'Tanpa teks sama sekali dan tanpa objek utama yang mencolok. Hanya pola, gradasi, partikel, gelombang, atau bentuk halus yang bergerak pelan.',
-    'Awal dan akhir siklus harus identik (pakai fungsi sinus atau fase periodik) supaya loop tidak terlihat melompat.',
-    'Kontras lembut, cocok dijadikan latar video atau layar belakang.']}
+    rules: c => ['Gambarkan SEMUA komponen visual wajib sebagai bentuk teknologi yang mudah dikenali, dan beri tiap komponen fungsi sesuai urutan animasi.',
+      'Ikuti urutan animasi tiga babak pada spesifikasi dengan waktu yang proporsional terhadap durasi. Gunakan hanya warna dari palet konsep (boleh turunan terang atau gelap dari warna yang sama).',
+      c && c.loop ? 'Konsep ini loop: keadaan akhir siklus menyambung ke keadaan awal tanpa lompatan.' : 'Konsep ini proses linear: jangan dipaksa menjadi loop, dan akhiri pada keadaan akhir yang rapi.']}
 };
 function buildPrompt() {
-  const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value], bg = $('bgmode').value;
+  const [w, h] = dims(), s = $('secs').value, p = PTYPES[$('ptype').value], bg = $('bgmode').value, c = p.concept ? window.__concept : null;
   const bodyBg = bg === 'transparan' ? 'transparent' : bg === 'hijau' ? '#00FF00' : '#000';
   const bgRule = bg === 'transparan'
-    ? '\n- LATAR HARUS TRANSPARAN: jangan mengisi latar dengan warna atau gradasi. Panggil ctx.clearRect(0, 0, canvas.width, canvas.height) setiap frame, lalu gambar hanya subjek dan efeknya. Tanpa bayangan jatuh ke latar. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
+    ? '- LATAR HARUS TRANSPARAN: jangan mengisi latar dengan warna atau gradasi. Panggil ctx.clearRect(0, 0, canvas.width, canvas.height) setiap frame, lalu gambar hanya objek teknologinya. Tanpa bayangan jatuh ke latar. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
     : bg === 'hijau'
-    ? '\n- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada subjek dan efek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
+    ? '- LATAR HARUS satu warna hijau chroma key solid #00FF00 memenuhi seluruh bingkai: tanpa gradasi, vinyet, pola, atau bayangan pada latar. Jangan memakai warna hijau atau hijau muda pada objek (pakai warna lain) supaya mudah dihapus dengan chroma key. Aturan latar ini mengalahkan aturan latar pada gaya visual.'
     : '';
-  const palet = $('palet').value, paletRule = palet !== 'gaya' && PALETS[palet] ? `\n- PALET WARNA WAJIB (mengalahkan warna pada gaya visual): ${PALETS[palet]}. Jangan memakai warna di luar palet ini, kecuali turunan terang atau gelap dari warna yang sama.` : '';
-  const genA = p.custom ? '' : '- Komposisi: isi seluruh bingkai. Elemen utama harus besar dan terbaca jelas dari jauh, margin tepi kecil dan seimbang. Jangan menampilkan antarmuka mini di sudut atau ruang kosong yang besar.\n- Kualitas profesional: grid dan jarak yang rapi, sudut membulat konsisten, bayangan lembut berlapis, palet maksimal 4 warna, hierarki visual yang jelas, serta kedalaman lewat lapisan. Gerakan berurutan (stagger) dengan easing halus (ease-out cubic atau expo), tanpa gerakan kaku.\n';
-  const genB = p.custom ? '' : '- Patuhi gaya visual di atas dengan setia. Jangan memakai tampilan dashboard gelap biru-navy dengan aksen teal kecuali gaya yang dipilih memintanya.\n';
-  const rules = typeof p.rules === 'function' ? p.rules() : p.rules;
-  return `${p.head($('subject').value)}${p.noStyle ? '' : ' Gaya visual: ' + (STYLES[$('style').value] || $('style').value) + '.'}
-
-Aturan wajib:
-- Semua dalam satu file (HTML + CSS + JavaScript). Tanpa library, font eksternal, atau gambar dari luar.
-- Gunakan tepat satu <canvas id="stage" width="${w}" height="${h}"> dan gambar semuanya dengan Canvas 2D (ctx). Jangan pakai animasi CSS atau elemen DOM untuk visual utama.
-- Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}${bgRule}${paletRule}
-- Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.
-- Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame.
-${p.custom ? '- Durasi total tepat ' + s + ' detik. Animasi berbasis waktu, ikuti aturan jenis keluaran di bawah.' : '- Durasi satu siklus sekitar ' + s + ' detik, lalu ulang dari awal (loop mulus).'}
-${rules.map(r => '- ' + r).join('\n')}
-- JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.
-${genA}- Jaga performa tetap ringan: elemen kecil atau partikel maksimal sekitar 40, hindari ctx.filter dan shadowBlur besar (di atas 20) pada banyak elemen, pakai bentuk sederhana.
-${genB}- Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Pakai gradasi halus, tepi bersih (anti-aliasing), dan gerakan yang kontinu.
-- Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".
-- Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.`;
+  const pal = $('palet').value, palRule = pal !== 'gaya' && PALETS[pal] ? `- PALET WARNA WAJIB (mengalahkan palet pada gaya): ${pal} = ${PALETS[pal].join(', ')}. Jangan memakai warna di luar palet ini, kecuali turunan terang atau gelap dari warna yang sama.` : '';
+  const sk = $('style').value, S = STYLES[sk], styleLine = p.concept ? '' : ` Gaya visual: ${sk} (${S.look}).`;
+  const loop = p.concept ? !!(c && c.loop) : !!p.loop;
+  const dur = loop ? `- Durasi satu siklus tepat ${s} detik, lalu ulang dari awal tanpa lompatan (seamless loop).` : `- Durasi total tepat ${s} detik. Ini animasi berurutan: awal dan akhir boleh berbeda dan tidak dipaksa menjadi loop.`;
+  const lines = ['Aturan wajib:',
+    '- Semua dalam satu dokumen HTML lengkap (HTML + CSS + JavaScript). Tanpa library, font, gambar, atau aset eksternal.',
+    `- Gunakan tepat satu <canvas id="stage" width="${w}" height="${h}"> dan gambar semuanya dengan Canvas 2D (ctx). Jangan pakai animasi CSS atau elemen DOM untuk visual utama.`,
+    `- Style: body{margin:0;background:${bodyBg}} canvas{display:block;width:100%;height:auto}`,
+    bgRule, palRule,
+    '- Pakai ukuran canvas (canvas.width dan canvas.height) sebagai acuan semua posisi dan ukuran, jangan angka piksel tetap, supaya tampilan sama di resolusi apa pun.',
+    '- Animasi jalan otomatis dengan requestAnimationFrame, berbasis waktu (performance.now), bukan hitungan frame. Target stabil minimal 30 FPS dengan gerakan halus dan konsisten.',
+    dur].concat(p.rules(c).map(r => '- ' + r), TECH_COMMON.map(r => '- ' + r), [
+    '- JANGAN menambahkan tombol, kontrol, atau elemen UI di halaman. Hanya canvas.',
+    '- Jaga performa tetap ringan: elemen kecil atau partikel maksimal sekitar 40, hindari ctx.filter dan shadowBlur besar (di atas 20) pada banyak elemen, pakai bentuk sederhana.',
+    '- Hasil harus bersih dan halus: hindari grain, noise acak, kilauan berkedip, atau pola yang berubah acak tiap frame. Tepi bersih (anti-aliasing) dan gerakan kontinu.',
+    '- Tulis kode 100% lengkap tanpa placeholder atau komentar "sisanya sama".',
+    '- Balasanmu hanya satu blok kode HTML. Tanpa kalimat pembuka, penjelasan, atau penutup di luar blok kode.']).filter(Boolean).join('\n');
+  return `${p.head($('subject').value, c)}${styleLine}\n\n${lines}\n`;
 }
 function bgUi() {
   const tr = $('bgmode').value === 'transparan';
@@ -297,10 +307,3 @@ $('clrcode').onclick = () => { $('code').value = ''; fr.srcdoc = ''; $('pb').sty
 $('bgmode').addEventListener('change', bgUi);
 bgUi();
 
-/* Jenis poster: rasio 16:9 dan durasi 10 detik dipilih otomatis (bisa diubah lagi) */
-$('ptype').addEventListener('change', () => {
-  if ($('ptype').value === 'poster') {
-    $('ratio').value = '16:9'; $('secs').value = '10'; refreshPrompt();
-    setStatus('Jenis poster: rasio 16:9 (lanskap) dan durasi 10 detik dipilih otomatis. Bisa diubah lagi.');
-  }
-});
