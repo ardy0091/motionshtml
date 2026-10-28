@@ -30,10 +30,11 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
 <div class="wrap">
 
   <section class="box" id="cgen">
-    <h2>Generator konsep kreatif</h2>
-    <p>Membuat konsep unik (judul dan deskripsi dalam bahasa Inggris) dari kombinasi kategori, struktur visual, bahasa desain, komposisi, palet, dan gerakan. Konsep yang sudah muncul tidak ditawarkan lagi.</p>
+    <h2>Generator konsep teknologi 2D vector</h2>
+    <p>Membuat konsep animasi teknologi dari blueprint nyata (objek, fungsi, komponen, gerak, dan urutan peristiwa), lalu memadukannya dengan gaya, palet, dan tata letak. Judul dan deskripsi dalam bahasa Inggris. Konsep yang sudah muncul tidak ditawarkan lagi.</p>
     <div class="row3">
-      <div class="f"><label>Kategori</label><select id="cg-group"><option value="all">Semua (campur)</option><option value="abstract">Abstract &amp; Experimental</option><option value="overlay">Overlay &amp; Motion Elements</option><option value="opening">Opening &amp; Content Intro</option><option value="illustr">Illustration &amp; Artistic Motion</option><option value="bg">Background &amp; Seamless Loop</option></select></div>
+      <div class="f"><label>Kategori</label><select id="cg-group"></select></div>
+      <div class="f"><label>Gaya konsep</label><select id="cg-style"></select></div>
       <div class="f"><label>Jumlah konsep</label><input id="cg-count" type="number" min="1" max="10" value="5"></div>
       <div class="f"><label>&nbsp;</label><button id="cg-go" class="pri" type="button">Buat konsep</button></div>
     </div>
@@ -41,22 +42,22 @@ iframe{width:100%;border:1px solid var(--line);border-radius:8px;background:#000
     <div id="cg-bar" style="display:none;gap:8px;flex-wrap:wrap"><button id="cg-copyall" type="button">Salin semua</button></div>
     <p id="cg-hist"></p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="cg-exp" type="button">Ekspor riwayat</button><button id="cg-imp" type="button">Impor riwayat</button><button id="cg-clr" type="button">✕ Hapus riwayat konsep</button><input id="cg-file" type="file" accept=".json,application/json" style="display:none"></div>
-    <p style="font-size:12px">Riwayat disimpan di browser ini saja, jadi tidak permanen dan tidak ikut pindah ke perangkat lain. Pakai Ekspor riwayat untuk cadangan dan Impor riwayat untuk memulihkan.</p>
+    <p style="font-size:12px">Riwayat hanya memeriksa konsep yang pernah muncul di browser ini, jadi tidak menjamin video berbeda dari karya di luar sistem. Riwayat tidak permanen dan tidak ikut pindah perangkat: pakai Ekspor riwayat untuk cadangan dan Impor riwayat untuk memulihkan.</p>
   </section>
 
   <section class="box">
     <h2>1. Buat prompt untuk AI</h2>
     <p>Salin prompt ini ke ChatGPT, Claude, atau Gemini versi gratis. AI akan menulis kode HTML animasinya.</p>
-    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="visual">1. Animasi visual (tanpa teks)</option><option value="teks">2. Teks bergerak</option><option value="latar">3. Latar loop abstrak</option><option value="karakter">4. Karakter vektor trending 2026</option><option value="poster">5. Poster sinematik (zoom antar adegan)</option><option value="konsep">6. Konsep kreatif (dari generator)</option></select></div>
-    <div class="f"><label id="tlabel">Tema animasi</label><input id="subject" value="Kotak laporan cuaca kota malam hari dengan hujan"></div>
+    <div class="f"><label>Jenis prompt</label><select id="ptype"><option value="proses">1. Technology Process Animation</option><option value="perangkat">2. Technology Device Animation</option><option value="sistem">3. Technology System Visualization</option><option value="ilmiah">4. Technology Scientific Illustration</option><option value="loop">5. Technology Seamless Loop</option><option value="konsep">6. Technology Concept Generator</option></select></div>
+    <div class="f"><label id="tlabel">Tema animasi</label><input id="subject" value="Semiconductor chip inspection machine"></div>
     <div id="hist" style="display:none;flex-direction:column;gap:8px"><div id="histlist" style="display:flex;flex-wrap:wrap;gap:6px"></div><button id="clrhist" type="button" style="align-self:flex-start;min-height:30px;padding:4px 12px;font-size:12px">✕ Hapus riwayat prompt</button></div>
     <div class="row3">
       <div class="f"><label>Resolusi</label><select id="res"><option value="720">720p</option><option value="1080" selected>1080p</option><option value="1440">2K</option><option value="2160">4K</option></select></div>
       <div class="f"><label>Rasio</label><select id="ratio"><option>16:9</option><option>9:16</option><option>1:1</option></select></div>
       <div class="f"><label>Durasi (detik)</label><input id="secs" type="number" min="2" max="60" value="10"></div>
-      <div class="f"><label>Gaya</label><select id="style"><option>korporat bersih</option><option>glassmorphism</option><option>fintech premium</option><option>gradasi mesh modern</option><option>isometrik 3D</option><option>editorial berani</option><option>vektor 3D kartun lembut 2026</option><option>gambar tangan organik 2026</option><option>retro-futuris datar 2026</option><option>cyberpunk</option><option>gelap sinematik</option><option>cerah berwarna</option><option>minimalis</option><option>neon</option></select></div>
+      <div class="f"><label>Gaya</label><select id="style"><option>Modern Flat Technology Vector</option><option>Futuristic Technical Illustration</option><option>Minimalist Technology Vector</option><option>Isometric 2D Technology Illustration</option><option>Technical Blueprint Vector</option><option>Retro Futuristic Technology</option><option>High Contrast Monochrome Technology</option><option>Corporate Technology Illustration</option><option>Editorial Technology Vector</option><option>Cyberpunk Flat Vector</option><option>Scientific Diagram Animation</option><option>Industrial Technical Vector</option><option>Geometric Technology Illustration</option><option>Premium Dark Technology Vector</option><option>Clean White Background Technology</option></select></div>
       <div class="f"><label>Latar</label><select id="bgmode"><option value="gaya">Sesuai gaya</option><option value="transparan">Transparan (WebM)</option><option value="hijau">Hijau (chroma key)</option></select></div>
-      <div class="f"><label>Palet warna</label><select id="palet"><option value="gaya">Sesuai gaya</option><option>merah - hitam - krem</option><option>biru malam - oranye</option><option>hijau zaitun - krem</option><option>ungu - pink - kuning</option><option>hitam - putih - emas</option></select></div>
+      <div class="f"><label>Palet warna</label><select id="palet"><option value="gaya">Sesuai gaya</option><option>Electric Blue</option><option>Teal Mint</option><option>Cyan Circuit</option><option>Mono Blueprint</option><option>Sunset Retro</option><option>Mono Contrast</option><option>Corporate Blue</option><option>Editorial Red-Blue</option><option>Neon Magenta</option><option>Lab Paper</option><option>Safety Industrial</option><option>Primary Geometric</option><option>Dark Gold</option><option>Clean White</option></select></div>
     </div>
     <label style="display:flex;gap:6px;align-items:center;color:var(--mute)"><input id="force" type="checkbox" checked> Paksa resolusi sesuai pilihan (canvas diperbesar otomatis)</label>
     <textarea id="prompt" readonly></textarea>
