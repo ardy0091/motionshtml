@@ -1,75 +1,211 @@
 'use strict';
 
 (() => {
+  const VERSION = '6.0';
+  const API = 'https://generativelanguage.googleapis.com/v1beta/';
   const $ = id => document.getElementById(id);
 
-  const required = [
+  const ids = [
     'im-status', 'im-key', 'im-clear', 'im-model',
     'im-models', 'im-file', 'im-preview', 'im-go',
     'im-duration', 'im-motion', 'im-loop', 'im-visual',
     'im-analysis', 'im-output', 'im-copy', 'im-download'
   ];
 
-  const missing = required.filter(id => !$(id));
+  const missing = ids.filter(id => !$(id));
 
   if (missing.length) {
-    console.error('Image Motion V5: Missing HTML elements:', missing);
+    console.error('Image Motion V6 missing elements:', missing);
     return;
   }
-
-  const VERSION = '5.0';
-  const API = 'https://generativelanguage.googleapis.com/v1beta/';
 
   const state = {
     image: null,
     mime: null,
-    busy: false
+    busy: false,
+    lastResult: null
   };
 
   const status = message => {
     $('im-status').textContent = `[V${VERSION}] ${message}`;
   };
 
-  const apiKey = () => $('im-key').value.trim();
+  const clamp = (n, min, max) =>
+    Math.max(min, Math.min(max, n));
 
-  const sleep = ms => new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
+  const sleep = ms =>
+    new Promise(resolve => setTimeout(resolve, ms));
 
-  const clamp = (value, min, max) => {
-    return Math.max(min, Math.min(max, value));
-  };
+  const asText = value =>
+    typeof value === 'string' ? value : '';
 
-  function getSettings() {
+  const normalize = value =>
+    asText(value).trim().toLowerCase();
+
+  const json = value => JSON.stringify(value, null, 2);
+
+  function settings() {
     const duration = Number($('im-duration').value);
+    const rawVisual = normalize($('im-visual').value);
 
     return {
       duration: Number.isFinite(duration)
         ? clamp(duration, 10, 30)
         : 10,
 
-      motion: $('im-motion').value || 'Balanced',
-      loop: $('im-loop').value || 'seamless',
-      visual: $('im-visual').value || 'canvas'
+      intensity: $('im-motion').value || 'Balanced',
+
+      loop: $('im-loop').value ||
+        'seamless when logically appropriate',
+
+      visualMode:
+        rawVisual === 'canvas'
+          ? 'canvas'
+          : /image|original|overlay|raster|source/.test(rawVisual)
+            ? 'original-image'
+            : 'unknown'
     };
   }
 
-  function visualMode(value) {
-    return value === 'canvas'
-      ? 'canvas'
-      : 'original-image';
+  function imagePart() {
+    if (!state.image || !state.mime) {
+      throw new Error('Upload gambar terlebih dahulu.');
+    }
+
+    return {
+      inline_data: {
+        mime_type: state.mime,
+        data: state.image
+      }
+    };
   }
 
-  $('im-clear').onclick = () => {
-    $('im-key').value = '';
+  function getModel() {
+    const model = $('im-model').value;
 
-    $('im-model').innerHTML =
-      '<option value="">Cek koneksi terlebih dahulu</option>';
+    if (!/^models\/[\w.-]+$/.test(model)) {
+      throw new Error('Pilih model Gemini yang valid.');
+    }
 
-    status('API Key dibersihkan dari input.');
-  };
+    return model;
+  }
 
-  $('im-file').onchange = () => {
+  async function request(path, body) {
+    const key = $('im-key').value.trim();
+
+    if (!key) {
+      throw new Error('Gemini API Key belum diisi.');
+    }
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(
+      () => controller.abort(),
+      90000
+    );
+
+    try {
+      const response = await fetch(API + path, {
+        method: body ? 'POST' : 'GET',
+
+        headers: {
+          'x-goog-api-key': key,
+          ...(body
+            ? { 'Content-Type': 'application/json' }
+            : {})
+        },
+
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.error?.message ||
+          `Gemini HTTP ${response.status}`
+        );
+      }
+
+      return data;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function generate(prompt, includeImage = false) {
+    const parts = [{ text: prompt }];
+
+    if (includeImage) {
+      parts.push(imagePart());
+    }
+
+    const body = {
+      contents: [{
+        role: 'user',
+        parts
+      }],
+
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json'
+      }
+    };
+
+    let error;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const result = await request(
+          getModel() + ':generateContent',
+          body
+        );
+
+        const candidate = result.candidates?.[0];
+
+        const raw = (
+          candidate?.content?.parts || []
+        ).map(part => part.text || '').join('');
+
+        if (!raw) {
+          throw new Error(
+            'Respons kosong: ' +
+            (candidate?.finishReason || 'unknown')
+          );
+        }
+
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/, '')
+          .trim();
+
+        return JSON.parse(cleaned);
+
+      } catch (e) {
+        error = e;
+
+        if (
+          attempt === 0 &&
+          /429|503|overload|resource exhausted/i.test(e.message)
+        ) {
+          await sleep(2500);
+          continue;
+        }
+
+        break;
+      }
+    }
+
+    throw error;
+  }
+
+  // ====================================================
+  // IMAGE UPLOAD
+  // ====================================================
+
+  $('im-file').addEventListener('change', () => {
     const file = $('im-file').files?.[0];
 
     state.image = null;
@@ -79,14 +215,12 @@
 
     if (!file) return;
 
-    const allowed = [
-      'image/jpeg',
+    if (![
       'image/png',
+      'image/jpeg',
       'image/webp'
-    ];
-
-    if (!allowed.includes(file.type)) {
-      status('Format gambar harus JPG, PNG, atau WebP.');
+    ].includes(file.type)) {
+      status('Gunakan JPG, PNG, atau WebP.');
       return;
     }
 
@@ -99,1078 +233,1168 @@
 
     reader.onload = () => {
       const dataURL = String(reader.result || '');
-      const encoded = dataURL.split(',')[1];
+      const base64 = dataURL.split(',')[1];
 
-      if (!encoded) {
-        status('Gagal membaca data gambar.');
+      if (!base64) {
+        status('Gagal membaca gambar.');
         return;
       }
 
-      state.image = encoded;
+      state.image = base64;
       state.mime = file.type;
 
       $('im-preview').src = dataURL;
       $('im-preview').hidden = false;
 
-      status('Gambar siap dianalisis oleh V5.');
+      status('Gambar siap dianalisis.');
     };
 
     reader.onerror = () => {
-      status('Gagal membaca gambar.');
+      status('File gambar gagal dibaca.');
     };
 
     reader.readAsDataURL(file);
-  };
+  });
 
-  async function api(path, body = null) {
-    if (!apiKey()) {
-      throw new Error('Masukkan Gemini API Key.');
-    }
-
-    const controller = new AbortController();
-
-    const timer = setTimeout(() => {
-      controller.abort();
-    }, 90000);
-
-    try {
-      const response = await fetch(API + path, {
-        method: body ? 'POST' : 'GET',
-
-        headers: {
-          'x-goog-api-key': apiKey(),
-          ...(body
-            ? { 'Content-Type': 'application/json' }
-            : {})
-        },
-
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.error?.message ||
-          `Gemini API HTTP ${response.status}`
-        );
-      }
-
-      return result;
-
-    } finally {
-      clearTimeout(timer);
-    }
-  }
+  // ====================================================
+  // MODEL MANAGEMENT
+  // ====================================================
 
   $('im-models').onclick = async () => {
     status('Memeriksa model Gemini...');
 
     try {
       const models = [];
-      let token = '';
+      let pageToken = '';
 
       do {
-        const query =
+        const path =
           'models?pageSize=100' +
-          (token
-            ? '&pageToken=' + encodeURIComponent(token)
+          (pageToken
+            ? '&pageToken=' + encodeURIComponent(pageToken)
             : '');
 
-        const response = await api(query);
+        const result = await request(path);
 
-        models.push(...(response.models || []));
+        models.push(...(result.models || []));
+        pageToken = result.nextPageToken || '';
 
-        token = response.nextPageToken || '';
+      } while (pageToken && models.length < 500);
 
-      } while (token && models.length < 500);
-
-      const available = models.filter(model => {
-        return (
-          model.supportedGenerationMethods?.includes(
-            'generateContent'
-          ) &&
-          /gemini/i.test(model.name)
-        );
-      });
+      const available = models.filter(model =>
+        model.supportedGenerationMethods?.includes(
+          'generateContent'
+        ) &&
+        /gemini/i.test(model.name)
+      );
 
       const select = $('im-model');
-
       select.replaceChildren();
 
       for (const model of available) {
         const option = document.createElement('option');
 
         option.value = model.name;
-
-        option.textContent = model.displayName
-          ? `${model.displayName} (${model.name})`
-          : model.name;
+        option.textContent =
+          model.displayName || model.name;
 
         select.append(option);
       }
 
       status(
-        available.length
-          ? `${available.length} model ditemukan. Pilih model yang mendukung gambar.`
-          : 'Tidak ditemukan model yang sesuai.'
+        `${available.length} model ditemukan. ` +
+        'Pilih model yang mendukung input gambar.'
       );
 
-    } catch (error) {
-      status('Gagal memeriksa model: ' + error.message);
+    } catch (e) {
+      status('Gagal memuat model: ' + e.message);
     }
   };
 
-  async function generate(parts, json = true) {
-    const model = $('im-model').value;
+  $('im-clear').onclick = () => {
+    $('im-key').value = '';
+    status('API Key dibersihkan dari input.');
+  };
 
-    if (!/^models\/[a-zA-Z0-9._-]+$/.test(model)) {
-      throw new Error('Pilih model Gemini terlebih dahulu.');
-    }
+  // ====================================================
+  // STAGE 1: ADAPTIVE OBJECT MAPPING
+  // ====================================================
 
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts
-        }
-      ],
-
-      generationConfig: {
-        temperature: 0.15,
-        maxOutputTokens: 8192,
-        ...(json
-          ? { responseMimeType: 'application/json' }
-          : {})
-      }
-    };
-
-    let lastError;
-
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const response = await api(
-          model + ':generateContent',
-          body
-        );
-
-        const candidate = response.candidates?.[0];
-
-        const result = (
-          candidate?.content?.parts || []
-        ).map(part => part.text || '').join('');
-
-        if (!result) {
-          throw new Error(
-            'Respons Gemini kosong. Finish reason: ' +
-            (candidate?.finishReason || 'unknown')
-          );
-        }
-
-        return result;
-
-      } catch (error) {
-        lastError = error;
-
-        const temporary =
-          /429|503|overload|high demand|resource exhausted|temporarily unavailable/i
-            .test(error.message);
-
-        if (attempt === 0 && temporary) {
-          status('Server sibuk. Mencoba ulang sekali...');
-          await sleep(3000);
-          continue;
-        }
-
-        break;
-      }
-    }
-
-    throw lastError;
-  }
-
-  function parseJSON(raw, stage) {
-    try {
-      const clean = raw
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/, '')
-        .trim();
-
-      return JSON.parse(clean);
-
-    } catch {
-      throw new Error(
-        `${stage}: JSON tidak valid atau terpotong. Coba model lain.`
-      );
-    }
-  }
-
-  // =====================================================
-  // V5 — PRECISION OBJECT MAPPING
-  // =====================================================
-
-  function analysisInstruction(settings) {
+  function analysisPrompt(s) {
     return `
-YOU ARE IMAGE MOTION ANALYST V5.
+ROLE: Universal Visual Scene Analyst V6.
 
-ROLE:
-Precision visual analyst, motion director,
-object mapper and commercial 2D animation planner.
+Analyze the ATTACHED IMAGE accurately.
 
-Analyze the attached image itself.
+The image can contain ANY subject:
+technology, nature, machinery, transport,
+architecture, abstract shapes, business,
+people, animals, objects, interfaces, or others.
 
-Do not rely on generic assumptions about technology graphics.
+DO NOT assume it contains folders, laptops,
+clouds, screens, or documents.
 
-PRIMARY PRIORITIES:
-1. Visual fidelity.
-2. Accurate object detection.
-3. Precise object coordinates.
-4. Meaningful functional animation.
-5. Layer separation feasibility.
-6. Seamless motion continuity.
+OBJECT DETECTION:
 
-IMAGE COORDINATES:
-Use normalized coordinates from 0 to 1.
+Identify visually significant objects.
 
-Origin:
-x=0 at left edge.
-y=0 at top edge.
+Use dynamic granularity:
+- A single simple object can be one object.
+- Independently meaningful visible components
+  should be separate objects.
+- A complex scene may contain many objects.
+- Do not force an arbitrary object count.
+- Do not invent invisible objects.
+- Do not merge independently actionable
+  components merely to reduce output size.
 
-For every important object provide:
+For each object provide:
+- unique ID
+- name
+- visible appearance
+- normalized bounding box
+- parent ID
+- visual role
+- motion capability
+- raster isolation requirements
+- confidence
 
-- unique object ID
-- exact visual identity
-- bounding box x,y,w,h
-- center x,y
-- parent object ID if applicable
-- foreground/background relationship
-- static or animated classification
-- whether it is baked into the raster image
-- whether it can move without ghosting
-- required masking or restoration
-- confidence level
+Coordinate system:
+x,y,w,h normalized to [0,1].
+Coordinates refer to the entire image.
 
-Bounding boxes must refer to the actual visible
-object, not the entire parent region.
+A bounding box should tightly enclose
+the visible object.
 
-For example:
-A folder inside a laptop screen must receive
-its own box, separate from the laptop screen.
+OBJECT ROLES:
+STATIC_STRUCTURE
+MOVABLE_COMPONENT
+OVERLAY_TARGET
+BACKGROUND
+DECORATIVE
 
-Do not identify an entire folder grid as
-one moving object if individual folders are visible.
+Determine which movements are physically,
+visually, and contextually meaningful.
 
-Inspect:
-- Laptop hardware
-- Laptop screen
-- Screen panels
-- Individual folder icons
-- Individual document icons
-- Upload/download indicators
-- Cloud graphics
-- Floating objects
-- Decorative circuits
-- Sync indicators
+Separate:
+1. Object motion.
+2. Functional state change.
+3. Decorative effects.
 
-Only include objects actually visible.
+Do not mistake decorative motion for
+a complete functional process.
 
-OBJECT CLASSIFICATION:
-STATIC_STRUCTURE:
-Objects that should never move.
+SCENE UNDERSTANDING:
 
-MOVABLE_CHILD:
-A small independent object that can animate.
+Describe the actual purpose or visual
+meaning of the image.
 
-RASTER_BAKED:
-Object already integrated into source pixels.
+Identify relationships:
+- source and destination
+- parent and child
+- input and output
+- cause and effect
+- spatial interaction
+- mechanical interaction
+- abstract visual relationships
 
-OVERLAY_TARGET:
-Static object that can receive animated overlays.
+Use only relationships supported by
+the image.
 
-DECORATIVE:
-Visual decoration, not primary action.
+VISUAL MODES:
 
-CRITICAL:
-An object being visible does NOT mean it
-can safely be moved.
+Canvas Reconstruction:
+All artwork is recreated using Canvas 2D.
 
-A baked object must not simply be duplicated
-over the original image.
+Original Image Overlay:
+Actual original image is drawn as background,
+with additional animation layers.
 
-MOTION PLANNING:
-Select one meaningful primary process.
+A chat image is NOT automatically a
+runtime HTML asset.
 
-Prefer:
-selection -> transfer -> progress -> completion.
+For raster-baked objects, moving them
+requires a clean underlying background
+and a separated moving layer.
 
-But only use steps supported by visible evidence.
+If these are unavailable, flag the
+movement as infeasible.
 
-A rotating icon is not sufficient as the
-primary process if more meaningful interactions
-are visually supported.
-
-Do not invent unseen interface components.
-
-Do not move the laptop, camera or major
-structural elements.
-
-VISUAL FIDELITY:
-Evaluate the two modes independently:
-
-MODE A:
-Standalone Canvas reconstruction.
-
-MODE B:
-Original image drawn onto Canvas as background,
-with animated overlay layers.
-
-Be realistic about fidelity.
-
-A complex raster illustration cannot be
-guaranteed pixel-identical when reconstructed
-using Canvas drawing commands.
-
-If the original image is required to preserve
-visual detail, explicitly say so.
-
-DURATION:
-${settings.duration} seconds.
-
-MOTION INTENSITY:
-${settings.motion}.
-
-RETURN VALID JSON ONLY.
-
-SCHEMA:
+RETURN JSON ONLY:
 
 {
-  "scene_description": "",
-  "visual_style": {
+  "scene": {
+    "description": "",
+    "category": "",
+    "visual_style": "",
     "palette": [],
-    "composition": "",
     "perspective": "",
-    "lighting": ""
+    "background_details": ""
   },
   "objects": [
     {
       "id": "obj_001",
       "name": "",
-      "visual_details": "",
+      "appearance": "",
       "bbox": {
         "x": 0,
         "y": 0,
-        "w": 0,
-        "h": 0
-      },
-      "center": {
-        "x": 0,
-        "y": 0
+        "w": 0.1,
+        "h": 0.1
       },
       "parent_id": null,
-      "classification": "STATIC_STRUCTURE",
+      "role": "STATIC_STRUCTURE",
       "baked_into_image": true,
-      "can_move_without_ghosting": false,
-      "masking_requirement": "",
+      "can_be_reconstructed": true,
+      "can_move_as_overlay": false,
+      "needs_background_restoration": false,
       "confidence": "high"
     }
   ],
-  "primary_process": {
-    "name": "",
-    "purpose": "",
-    "source_object_id": "",
-    "target_object_id": "",
-    "functional_steps": [],
-    "visual_evidence": [],
-    "limitations": []
-  },
-  "motion_candidates": [
+  "relationships": [
     {
-      "object_id": "",
-      "action": "",
-      "functional_role": "",
-      "start_state": "",
-      "end_state": "",
-      "safe_for_overlay": true,
-      "requires_isolation": false
+      "from": "obj_001",
+      "to": "obj_002",
+      "type": "",
+      "visual_evidence": ""
     }
   ],
-  "static_object_ids": [],
-  "layer_plan": {
-    "background": [],
-    "static_foreground": [],
-    "animated_overlays": [],
-    "masking_required": []
-  },
-  "fidelity": {
-    "canvas_reconstruction": "",
-    "original_image_overlay": "",
-    "recommended_mode": "",
-    "risks": []
-  },
-  "forbidden_changes": []
+  "possible_actions": [
+    {
+      "object_ids": ["obj_001"],
+      "action": "",
+      "visible_state_change": "",
+      "reason": "",
+      "technical_risk": ""
+    }
+  ],
+  "visual_risks": [],
+  "reconstruction_notes": [],
+  "overlay_notes": []
 }
 
-IMPORTANT:
-No invented objects.
-No unsupported movements.
-No claims of guaranteed pixel-perfect
-Canvas reconstruction.
+Return actual image observations,
+not generic assumptions.
 `;
   }
 
-  // =====================================================
-  // V5 — VISUAL FIDELITY ENGINE
-  // =====================================================
+  function validateAnalysis(data) {
+    const errors = [];
 
-  function fidelityInstruction(settings) {
-    const mode = visualMode(settings.visual);
-
-    if (mode === 'canvas') {
-      return `
-VISUAL MODE: STANDALONE CANVAS RECONSTRUCTION.
-
-The original uploaded image is a visual reference,
-not an automatically available browser asset.
-
-Reconstruct the illustration using Canvas 2D.
-
-Preserve:
-- major silhouettes
-- proportions
-- recognizable object details
-- object counts
-- relative positions
-- perspective
-- interface layout
-- visual hierarchy
-- color palette
-
-Do not replace a complex laptop illustration
-with a generic rectangle.
-
-Do not invent a new composition.
-
-If the reference cannot be reconstructed faithfully,
-acknowledge that limitation.
-
-Do not claim original pixels are preserved.
-
-Draw the static scene first.
-
-Then animate independent elements.
-
-Avoid moving objects that cannot be reconstructed
-with a clean background.
-`;
+    if (!data?.scene?.description) {
+      errors.push('Scene description missing.');
     }
 
-    return `
-VISUAL MODE: ORIGINAL IMAGE + MOTION OVERLAYS.
+    if (!Array.isArray(data?.objects) ||
+        data.objects.length === 0) {
+      errors.push('No objects mapped.');
+    }
 
-The original uploaded image must be used
-as the actual Canvas background.
+    const objectIds = new Set();
+
+    for (const obj of data.objects || []) {
+      if (!obj.id || objectIds.has(obj.id)) {
+        errors.push('Duplicate or missing object ID.');
+      }
+
+      objectIds.add(obj.id);
+
+      const b = obj.bbox;
+
+      if (!b) {
+        errors.push(`Missing bbox: ${obj.id}`);
+        continue;
+      }
+
+      const values = [b.x, b.y, b.w, b.h];
+
+      if (values.some(v =>
+        typeof v !== 'number' ||
+        !Number.isFinite(v)
+      )) {
+        errors.push(`Invalid bbox: ${obj.id}`);
+        continue;
+      }
+
+      if (
+        b.x < 0 || b.y < 0 ||
+        b.w <= 0 || b.h <= 0 ||
+        b.x + b.w > 1.02 ||
+        b.y + b.h > 1.02
+      ) {
+        errors.push(`Out-of-range bbox: ${obj.id}`);
+      }
+    }
+
+    for (const obj of data.objects || []) {
+      if (
+        obj.parent_id &&
+        !objectIds.has(obj.parent_id)
+      ) {
+        errors.push(`Unknown parent: ${obj.id}`);
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      objectIds
+    };
+  }
+
+  // ====================================================
+  // STAGE 2: MULTI-CONCEPT MOTION ENGINE
+  // ====================================================
+
+  function conceptPrompt(analysis, s) {
+    return `
+ROLE: Universal Motion Concept Director V6.
+
+Create THREE DISTINCT animation concepts
+for the analyzed image.
+
+Each concept must be grounded in the
+actual objects and visual meaning.
+
+Do not force a business process on an
+abstract image.
+
+Do not force translation on a clock,
+rotation on a battery, or file transfer
+on an unrelated illustration.
+
+A meaningful animation can be:
+- mechanical motion
+- object transformation
+- state change
+- material flow
+- growth or reduction
+- spatial movement
+- interaction
+- abstract visual transformation
+- rotation when functionally appropriate
+
+Avoid selecting decorative effects
+as the primary action when more meaningful
+motion is feasible.
 
 IMPORTANT:
-The image attached in the AI chat is not
-automatically available inside HTML.
 
-The generated HTML must either:
-
-A. Contain the actual image as an embedded
-data URI, if those bytes are available.
-
-OR
-
-B. Reference a real image asset supplied
-alongside the HTML.
-
-Never invent a fake base64 image.
-
-Never silently replace the original image
-with a simplified Canvas reconstruction.
-
-Draw the original image onto Canvas
-at its correct aspect ratio.
-
-Apply animation overlays on top.
-
-Use coordinate mapping that matches
-the original image dimensions.
-
-Do not move baked-in objects without
-masking and background restoration.
-
-If masking cannot be done reliably,
-keep the object stationary and animate
-a non-destructive overlay instead.
-
-Original image fidelity is preserved only
-where the actual source image remains
-unchanged and correctly displayed.
-`;
-  }
-
-  // =====================================================
-  // V5 — MASTER PROMPT ENGINE
-  // =====================================================
-
-  function masterPrompt(settings) {
-    return `
-ROLE:
-Senior HTML5 Canvas 2D Motion Engineer.
-Precision Reference Illustrator.
-Commercial Motion Graphics Director.
-
-VERSION:
-IMAGE MOTION MASTER PROMPT V5.
-
-MISSION:
-Create a professional ${settings.duration}-second
-commercial motion graphic based on the uploaded image.
-
-PRIORITY ORDER:
-
-1. Preserve reference composition.
-2. Preserve recognizable visual details.
-3. Animate a meaningful functional process.
-4. Maintain precise object alignment.
-5. Prevent ghosting and duplicated objects.
-6. Maintain timing continuity.
-7. Optimize smooth playback.
-
-REFERENCE AUTHORITY:
-The uploaded original image defines appearance.
-
-STORYBOARD AUTHORITY:
-The validated motion timeline defines animation.
-
-Do not substitute unrelated designs.
-
-${fidelityInstruction(settings)}
-
-TECHNICAL SPECIFICATIONS:
-
-- One complete HTML document.
-- Canvas 2D only.
-- Canvas ID: stage.
-- Resolution: 1920x1080.
-- Aspect ratio: 16:9.
-- Responsive display.
-- Target playback: 60 FPS.
-- Duration: ${settings.duration} seconds.
-- No audio.
-- No external JavaScript libraries.
-- No CSS animations for visual elements.
-- No logos or watermarks.
-- No invented brand names.
-
-ANIMATION ENGINE:
-
-Use requestAnimationFrame.
-
-Use performance.now() for time-based animation.
-
-Use deterministic animation state.
-
-All movement must be calculated from time,
-not frame count.
-
-Do not use random motion that changes
-unpredictably between loops.
-
-OBJECT POSITIONING:
-
-Use normalized object coordinates
-from the analysis.
-
-Convert to Canvas positions:
-
-pixelX = normalizedX * canvas.width
-pixelY = normalizedY * canvas.height
-
-Convert bounding box width and height
-using canvas dimensions.
-
-If the image is fitted with letterboxing
-or cropping, transform the coordinates
-to match that image placement.
-
-Never confuse image coordinates
-with screen-local coordinates.
-
-PARENT AND CHILD OBJECTS:
-
-Keep static parent objects fixed.
-
-Animate only designated child objects.
-
-Do not rotate the whole laptop
-to animate a sync indicator.
-
-Do not move the entire folder grid
-to animate one selected folder.
-
-FUNCTIONAL MOTION:
-
-The primary animation should demonstrate
-a coherent visible process.
-
-Use the actual visible objects.
-
-Prefer state transitions over
-decorative animation.
-
-When supported by the image:
-
-- select a source object
-- show process initiation
-- indicate transfer or processing
-- show destination response
-- show completion
-
-Do not invent unsupported interface states.
-
-If only overlay animation is feasible,
-make that limitation explicit.
-
-LAYER AND MASKING RULES:
-
-Do not duplicate an object already baked
-into the source image.
-
-Do not cover complex artwork with
-unmatched opaque rectangles.
-
-Use isolated object layers when available.
-
-When object isolation is impossible,
-prefer highlight, progress or
-status overlays without moving the
-original object.
-
-Maintain correct occlusion and clipping.
-
-SEAMLESS LOOP RULES:
-
-Requested playback:
-${settings.loop}
-
-For a seamless loop:
-
-- first and last visible states must match
-- position must match
-- brightness must match
-- opacity must match
-- rotation phase must match
-- velocity must match where motion crosses
-  the loop boundary
-
-Use periodic mathematical functions
-for continuous loop effects.
-
-For continuously rotating objects,
-use constant angular velocity.
-
-Do not use ease-in-out on a continuous
-rotation that crosses the loop boundary.
-
-A one-way transfer may require
-a controlled reset or nonloop ending.
-
-Do not falsely claim seamlessness
-when the states do not match.
-
-CANVAS QUALITY RULES:
-
-Canvas globalAlpha must remain
-between 0 and 1.
-
-Use additional glow layers rather than
-alpha values above 1.
-
-Avoid excessive bloom.
-
-Avoid flicker.
-
-Avoid unnecessary particle clutter.
-
-Maintain crisp shapes and clean edges.
-
-Keep major objects fully visible.
-
-TIMELINE RULES:
-
-Every storyboard beat must have:
-
-- exact start time
-- exact end time
-- target object ID
-- visible starting state
-- visible ending state
-- movement path
-- easing
-- layer strategy
+Three concepts must differ in their
+PRIMARY ACTION, not merely colors,
+speed, or glow intensity.
+
+For each concept specify:
+- actual object IDs
+- primary action
+- observable beginning and ending states
+- motion category
+- visible outcome
+- technical feasibility
 - masking requirements
-- functional purpose
-
-Never leave unexplained timeline gaps.
-
-Do not animate unsupported objects.
-
-QUALITY VERIFICATION:
-
-Before output, verify:
-
-1. Main objects match the reference.
-2. Object placement is accurate.
-3. Static elements remain static.
-4. Primary functional action is visible.
-5. No duplicated baked objects appear.
-6. No visual elements disappear unexpectedly.
-7. Animation timing is coherent.
-8. Loop continuity is plausible.
-9. HTML is complete and executable.
-
-OUTPUT:
-Return one complete HTML document.
-
-Do not return pseudocode.
-
-Do not return an explanation instead of code.
-
-Do not claim pixel-perfect fidelity
-unless the original image is actually
-used as the background.
-`;
-  }
-
-  // =====================================================
-  // V5 — STORYBOARD DIRECTOR
-  // =====================================================
-
-  function storyboardInstruction(analysis, settings) {
-    return `
-YOU ARE MOTION DIRECTOR V5.
-
-Build an accurate ${settings.duration}-second
-storyboard from the supplied image analysis.
-
-The storyboard must use actual object IDs.
-
-Never refer vaguely to "a folder"
-when multiple folders are visible.
-
-Specify which object ID is animated.
-
-PRIMARY PROCESS:
-${JSON.stringify(analysis.primary_process || {})}
-
-OBJECT MAP:
-${JSON.stringify(analysis.objects || [])}
-
-MOTION CANDIDATES:
-${JSON.stringify(analysis.motion_candidates || [])}
-
-LAYER PLAN:
-${JSON.stringify(analysis.layer_plan || {})}
+- whether Canvas reconstruction supports it
+- whether original-image overlay supports it
 
 VISUAL MODE:
-${visualMode(settings.visual)}
+${s.visualMode}
 
-MOTION INTENSITY:
-${settings.motion}
+DURATION:
+${s.duration} seconds.
 
-LOOP PREFERENCE:
-${settings.loop}
+INTENSITY:
+${s.intensity}
 
-REQUIREMENTS:
-
-1. Meaningful primary action.
-2. Accurate object IDs.
-3. Precise normalized coordinates.
-4. No unsupported object movement.
-5. Clear functional state changes.
-6. No duplicated raster objects.
-7. Correct masking strategy.
-8. Exact timeline coverage.
-9. Realistic loop continuity.
-
-IMPORTANT:
-Do not automatically select the most
-dramatic movement.
-
-Select the best movement that can
-actually be implemented.
-
-If the image has complex baked-in objects,
-prefer non-destructive overlays.
-
-But do not reduce every animation
-to meaningless glow or rotation.
-
-Choose a coherent process that has
-a clear beginning, progression and result.
-
-Each beat must include:
-start_second,
-end_second,
-object_id,
-action,
-initial_state,
-final_state,
-position,
-movement_path,
-easing,
-layer_strategy,
-masking_strategy,
-functional_result.
-
-TIMELINE:
-
-Start at exactly 0.
-
-End at exactly ${settings.duration}.
-
-No gaps.
-
-No overlaps.
-
-At least 3 meaningful phases.
-
-A decorative-only storyboard is unacceptable
-when a supported functional process exists.
-
-LOOP VALIDATION:
-
-Do not claim a seamless loop merely
-because overlays fade out.
-
-Check whether all active animations
-have compatible start/end states.
-
-For nonperiodic motion,
-describe a legitimate reset or hold.
+ANALYSIS:
+${json(analysis)}
 
 RETURN JSON ONLY:
 
 {
-  "storyboard": [
+  "concepts": [
     {
-      "start_second": 0,
-      "end_second": 1,
-      "object_id": "",
-      "action": "",
+      "id": "concept_1",
+      "title": "",
+      "description": "",
+      "object_ids": [],
+      "primary_action": "",
+      "motion_category": "",
       "initial_state": "",
       "final_state": "",
-      "position": {
-        "x": 0,
-        "y": 0
-      },
-      "movement_path": "",
-      "easing": "",
-      "layer_strategy": "",
-      "masking_strategy": "",
-      "functional_result": ""
+      "observable_change": "",
+      "functional_purpose": "",
+      "technical_strategy": "",
+      "requires_isolation": false,
+      "requires_inpainting": false,
+      "canvas_feasible": true,
+      "overlay_feasible": true,
+      "risk_level": "low",
+      "reason": ""
     }
-  ],
-  "animation_rules": [],
-  "loop_assessment": {
-    "seamless_feasible": false,
-    "reason": "",
-    "reset_strategy": ""
-  },
-  "visual_fidelity_notes": [],
-  "detailed_english_prompt": ""
+  ]
 }
 
-DETAILED ENGLISH PROMPT:
-
-Write a scene-specific implementation description.
-
-Identify exact object IDs and visual positions.
-
-Describe every animation phase.
-
-Describe masking and clipping.
-
-Describe how visual fidelity is maintained.
-
-Do not contradict the storyboard.
-
-Do not guarantee impossible fidelity.
+Return three distinct concepts.
+Do not invent objects.
 `;
   }
 
-  // =====================================================
-  // V5 — VALIDATION
-  // =====================================================
+  // ====================================================
+  // STAGE 3: DETERMINISTIC CONCEPT SCORING
+  // ====================================================
 
-  function validateAnalysis(analysis) {
-    if (!analysis || typeof analysis !== 'object') {
-      throw new Error('Analisis gambar tidak valid.');
+  function scoreConcept(concept, analysis, s) {
+    const objectIds = new Set(
+      analysis.objects.map(obj => obj.id)
+    );
+
+    const selected = Array.isArray(concept.object_ids)
+      ? concept.object_ids
+      : [];
+
+    const reasons = [];
+    let score = 0;
+
+    if (!selected.length) {
+      return {
+        score: -100,
+        rejected: true,
+        reasons: ['No target objects.']
+      };
     }
 
-    if (!analysis.scene_description) {
-      throw new Error('Deskripsi gambar tidak tersedia.');
+    if (selected.some(id => !objectIds.has(id))) {
+      return {
+        score: -100,
+        rejected: true,
+        reasons: ['Unknown object ID.']
+      };
     }
 
     if (
-      !Array.isArray(analysis.objects) ||
-      analysis.objects.length < 2
+      !asText(concept.primary_action).trim() ||
+      !asText(concept.observable_change).trim()
     ) {
-      throw new Error('Pemetaan objek tidak lengkap.');
+      return {
+        score: -100,
+        rejected: true,
+        reasons: ['Missing observable action.']
+      };
     }
 
-    const ids = new Set();
+    const category = normalize(concept.motion_category);
+    const action = normalize(concept.primary_action);
+    const outcome = normalize(concept.observable_change);
 
-    for (const object of analysis.objects) {
-      if (!object.id || ids.has(object.id)) {
-        throw new Error('ID objek kosong atau duplikat.');
-      }
+    const decorative = /glow|pulse|blink|sparkle|flicker|shimmer/.test(
+      category + ' ' + action
+    );
 
-      ids.add(object.id);
+    const rotation = /rotat|spin|turn/.test(
+      category + ' ' + action
+    );
 
-      const box = object.bbox;
+    const outcomeIsDecorative =
+      /^(glow|pulse|blink|rotate|spin|shimmer)/.test(outcome);
 
-      if (!box) {
-        throw new Error(
-          `Bounding box objek ${object.id} tidak tersedia.`
+    const meaningfulCategory =
+      /transfer|transform|state|progress|mechanical|growth|flow|interaction|translation|movement|rotation|abstract|reveal|morph|change/.test(
+        category
+      );
+
+    if (meaningfulCategory) score += 20;
+
+    if (concept.initial_state &&
+        concept.final_state &&
+        normalize(concept.initial_state) !==
+        normalize(concept.final_state)) {
+      score += 20;
+    }
+
+    if (outcome.length >= 12) score += 15;
+
+    if (concept.functional_purpose) score += 10;
+
+    if (concept.technical_strategy) score += 10;
+
+    if (decorative && outcomeIsDecorative) {
+      score -= 35;
+      reasons.push('Decorative-only primary action.');
+    }
+
+    // Rotation is not automatically bad.
+    // It can be correct for clocks, wheels, gears, etc.
+    if (rotation) {
+      const relevant = selected.some(id => {
+        const obj = analysis.objects.find(o => o.id === id);
+        return /clock|hand|wheel|gear|fan|turbine|propeller|rotor|dial|spindle|cog|jarum|roda|kipas/i.test(
+          (obj?.name || '') + ' ' +
+          (obj?.appearance || '')
         );
+      });
+
+      if (relevant) score += 20;
+      else if (outcomeIsDecorative) score -= 15;
+    }
+
+    const risk = normalize(concept.risk_level);
+
+    if (risk === 'low') score += 15;
+    if (risk === 'medium') score += 5;
+    if (risk === 'high') score -= 15;
+
+    if (s.visualMode === 'canvas') {
+      if (concept.canvas_feasible === false) {
+        return {
+          score: -100,
+          rejected: true,
+          reasons: ['Not feasible in Canvas mode.']
+        };
       }
 
-      const values = [
-        box.x,
-        box.y,
-        box.w,
-        box.h
-      ].map(Number);
-
-      if (values.some(value => !Number.isFinite(value))) {
-        throw new Error(
-          `Koordinat objek ${object.id} tidak valid.`
-        );
+      if (concept.requires_inpainting === true) {
+        return {
+          score: -100,
+          rejected: true,
+          reasons: [
+            'Raster inpainting is incompatible with standalone Canvas.'
+          ]
+        };
       }
+    }
 
-      const [x, y, w, h] = values;
+    if (s.visualMode === 'original-image') {
+      if (concept.overlay_feasible === false) {
+        return {
+          score: -100,
+          rejected: true,
+          reasons: ['Not feasible in overlay mode.']
+        };
+      }
 
       if (
-        x < 0 || y < 0 ||
-        w <= 0 || h <= 0 ||
-        x + w > 1.02 ||
-        y + h > 1.02
+        concept.requires_isolation === true ||
+        concept.requires_inpainting === true
       ) {
-        throw new Error(
-          `Bounding box objek ${object.id} di luar gambar.`
-        );
+        return {
+          score: -100,
+          rejected: true,
+          reasons: [
+            'Required image isolation/restoration is not implemented.'
+          ]
+        };
       }
     }
 
-    if (!analysis.primary_process?.name) {
-      throw new Error('Proses animasi utama belum ditentukan.');
-    }
-
-    return ids;
+    return {
+      score,
+      rejected: score < 15,
+      reasons
+    };
   }
 
-  function validateStoryboard(plan, duration, ids) {
-    if (!Array.isArray(plan.storyboard)) {
-      throw new Error('Storyboard tidak ditemukan.');
+  function rankConcepts(data, analysis, s) {
+    const concepts = Array.isArray(data.concepts)
+      ? data.concepts
+      : [];
+
+    if (concepts.length < 2) {
+      throw new Error(
+        'Gemini tidak memberikan cukup alternatif konsep.'
+      );
     }
 
-    if (plan.storyboard.length < 3) {
-      throw new Error('Storyboard terlalu sederhana.');
+    const ranked = concepts.map(concept => ({
+      ...concept,
+      evaluation: scoreConcept(
+        concept,
+        analysis,
+        s
+      )
+    }));
+
+    ranked.sort(
+      (a, b) =>
+        b.evaluation.score - a.evaluation.score
+    );
+
+    return ranked;
+  }
+
+  // ====================================================
+  // STAGE 4: STORYBOARD GENERATOR
+  // ====================================================
+
+  function storyboardPrompt(analysis, concept, s) {
+    return `
+ROLE: Production Motion Director V6.
+
+Generate a technically realistic storyboard.
+
+Use the SELECTED CONCEPT.
+Do not replace it with unrelated rotation,
+glow, or decorative motion.
+
+SELECTED CONCEPT:
+${json(concept)}
+
+SCENE:
+${json(analysis.scene)}
+
+OBJECT MAP:
+${json(analysis.objects)}
+
+DURATION:
+${s.duration} seconds.
+
+VISUAL MODE:
+${s.visualMode}
+
+LOOP REQUEST:
+${s.loop}
+
+RULES:
+
+1. Every beat must refer to real object IDs.
+2. Each beat must have a visible result.
+3. Primary action must be recognizable.
+4. Secondary effects must remain secondary.
+5. Timeline must cover exactly the duration.
+6. No timeline gaps or overlaps.
+7. Keep static structures stationary.
+8. Do not invent missing image layers.
+9. Do not require unsupported inpainting.
+10. Do not change the reference composition.
+
+Canvas mode:
+Reconstruct static scene and animate
+separately drawn components.
+
+Original-image overlay mode:
+Keep baked-in objects stationary unless
+actual isolated layers and clean background
+assets are available.
+
+For overlay mode, do not claim a moving
+raster object is feasible without those assets.
+
+For looped animation:
+Check visual state AND velocity continuity.
+
+If a seamless loop is not possible,
+state that clearly.
+
+RETURN JSON ONLY:
+
+{
+  "title": "",
+  "duration": ${s.duration},
+  "beats": [
+    {
+      "start": 0,
+      "end": 1,
+      "object_ids": [],
+      "action": "",
+      "initial_state": "",
+      "final_state": "",
+      "visible_change": "",
+      "path": "",
+      "easing": "",
+      "layer_strategy": "",
+      "masking_strategy": "",
+      "purpose": ""
+    }
+  ],
+  "static_objects": [],
+  "loop": {
+    "feasible": false,
+    "reason": "",
+    "position_continuity": "",
+    "velocity_continuity": "",
+    "reset_strategy": ""
+  },
+  "implementation_notes": [],
+  "visual_fidelity_notes": []
+}
+
+Use exact numeric times.
+Return at least three beats.
+`;
+  }
+
+  // ====================================================
+  // STAGE 5: QUALITY GATE
+  // ====================================================
+
+  function validateStoryboard(plan, analysis, concept, s) {
+    const errors = [];
+    const beats = plan?.beats;
+
+    if (!Array.isArray(beats) || beats.length < 3) {
+      return [
+        'Storyboard must contain at least three beats.'
+      ];
     }
 
-    const beats = plan.storyboard;
+    const objectIds = new Set(
+      analysis.objects.map(o => o.id)
+    );
 
     let previousEnd = 0;
+    let meaningfulBeats = 0;
 
-    for (const beat of beats) {
-      const start = Number(beat.start_second);
-      const end = Number(beat.end_second);
+    for (let i = 0; i < beats.length; i++) {
+      const beat = beats[i];
+
+      const start = Number(beat.start);
+      const end = Number(beat.end);
 
       if (
         !Number.isFinite(start) ||
         !Number.isFinite(end)
       ) {
-        throw new Error('Waktu storyboard tidak valid.');
+        errors.push(`Beat ${i + 1}: invalid time.`);
+        continue;
       }
 
-      if (Math.abs(start - previousEnd) > 0.05) {
-        throw new Error(
-          'Timeline memiliki gap atau overlap.'
+      if (i === 0 && Math.abs(start) > 0.001) {
+        errors.push('Timeline must start at zero.');
+      }
+
+      if (Math.abs(start - previousEnd) > 0.001) {
+        errors.push(
+          `Beat ${i + 1}: timeline gap/overlap.`
         );
       }
 
-      if (end <= start || end > duration + 0.05) {
-        throw new Error('Durasi beat tidak valid.');
-      }
-
-      if (!ids.has(beat.object_id)) {
-        throw new Error(
-          `Storyboard menggunakan ID objek tidak dikenal: ${beat.object_id}`
+      if (end <= start || end > s.duration + 0.001) {
+        errors.push(
+          `Beat ${i + 1}: invalid end time.`
         );
       }
 
-      if (!beat.action || !beat.final_state) {
-        throw new Error('Detail gerakan tidak lengkap.');
+      const targets = Array.isArray(beat.object_ids)
+        ? beat.object_ids
+        : [];
+
+      if (
+        !targets.length ||
+        targets.some(id => !objectIds.has(id))
+      ) {
+        errors.push(
+          `Beat ${i + 1}: invalid target objects.`
+        );
+      }
+
+      if (
+        !beat.action ||
+        !beat.visible_change ||
+        !beat.final_state
+      ) {
+        errors.push(
+          `Beat ${i + 1}: missing motion details.`
+        );
+      }
+
+      const content = normalize(
+        [
+          beat.action,
+          beat.visible_change,
+          beat.purpose
+        ].join(' ')
+      );
+
+      const decorativeOnly =
+        /^(rotate|spin|glow|pulse|blink|shimmer)/.test(
+          normalize(beat.action)
+        ) &&
+        !/transfer|progress|complete|receive|select|change|advance|mechanical|clock|wheel|gear|time|move|transform|grow|fill|reveal|morph/.test(
+          content
+        );
+
+      if (!decorativeOnly) meaningfulBeats++;
+
+      const masking = normalize(
+        beat.masking_strategy
+      );
+
+      if (
+        s.visualMode === 'canvas' &&
+        /inpaint|raster patch|pixel restoration/.test(masking)
+      ) {
+        errors.push(
+          `Beat ${i + 1}: raster masking conflicts with Canvas mode.`
+        );
+      }
+
+      if (
+        s.visualMode === 'original-image' &&
+        /inpaint|remove baked|restore background/.test(masking)
+      ) {
+        errors.push(
+          `Beat ${i + 1}: unavailable image restoration.`
+        );
       }
 
       previousEnd = end;
     }
 
-    if (Math.abs(previousEnd - duration) > 0.05) {
-      throw new Error(
-        'Storyboard tidak mencakup seluruh durasi.'
+    if (Math.abs(previousEnd - s.duration) > 0.001) {
+      errors.push(
+        'Timeline does not end at requested duration.'
       );
     }
 
-    if (
-      typeof plan.detailed_english_prompt !== 'string' ||
-      plan.detailed_english_prompt.length < 300
-    ) {
-      throw new Error('Detail Master Prompt terlalu pendek.');
+    if (meaningfulBeats === 0) {
+      errors.push(
+        'Storyboard contains decorative motion only.'
+      );
     }
 
-    return true;
+    const selectedAction = normalize(
+      concept.primary_action
+    );
+
+    const storyboardText = normalize(
+      beats.map(b =>
+        [
+          b.action,
+          b.visible_change,
+          b.purpose
+        ].join(' ')
+      ).join(' ')
+    );
+
+    const actionWords = selectedAction
+      .split(/\W+/)
+      .filter(word => word.length >= 5);
+
+    if (
+      actionWords.length &&
+      !actionWords.some(word =>
+        storyboardText.includes(word)
+      )
+    ) {
+      errors.push(
+        'Storyboard may not implement selected concept.'
+      );
+    }
+
+    return errors;
   }
 
-  function qualityWarnings(analysis, plan, settings) {
-    const warnings = [];
+  // ====================================================
+  // STAGE 6: LIMITED REPAIR
+  // ====================================================
 
-    const mode = visualMode(settings.visual);
+  async function repairStoryboard(
+    plan,
+    errors,
+    analysis,
+    concept,
+    s
+  ) {
+    const prompt = `
+ROLE: Storyboard Repair Engineer.
 
-    if (mode === 'canvas') {
-      warnings.push(
-        'Standalone Canvas tidak menjamin ilustrasi identik dengan gambar Flow.'
-      );
-    }
+Repair the following storyboard.
 
-    if (
-      mode === 'original-image' &&
-      analysis.fidelity?.original_image_overlay
-    ) {
-      warnings.push(
-        'Mode gambar asli memerlukan aset gambar yang benar-benar tersedia saat HTML dijalankan.'
-      );
-    }
+Do not change the selected motion concept.
 
-    if (
-      settings.loop.toLowerCase().includes('seamless') &&
-      plan.loop_assessment?.seamless_feasible === false
-    ) {
-      warnings.push(
-        'Storyboard menilai seamless loop tidak sepenuhnya memungkinkan.'
-      );
-    }
+SELECTED CONCEPT:
+${json(concept)}
 
-    return warnings;
+SCENE OBJECTS:
+${json(analysis.objects)}
+
+CURRENT STORYBOARD:
+${json(plan)}
+
+VALIDATION ERRORS:
+${json(errors)}
+
+DURATION:
+${s.duration}
+
+VISUAL MODE:
+${s.visualMode}
+
+Fix all listed errors.
+
+Preserve real object IDs.
+
+Do not introduce unavailable raster
+masking or inpainting.
+
+Do not replace meaningful actions
+with decorative rotations.
+
+Return the COMPLETE corrected storyboard
+using exactly the same JSON structure.
+`;
+
+    return generate(prompt);
   }
 
-  // =====================================================
-  // V5 — MAIN GENERATOR
-  // =====================================================
+  // ====================================================
+  // STAGE 7: MASTER PROMPT BUILDER
+  // ====================================================
+
+  function visualInstructions(s) {
+    if (s.visualMode === 'canvas') {
+      return `
+VISUAL MODE: STANDALONE CANVAS RECONSTRUCTION.
+
+The uploaded image is the visual reference.
+
+The HTML must rebuild the visible scene
+using Canvas 2D drawing commands.
+
+Draw:
+- background
+- static structures
+- visible objects
+- fine visual details
+- independent moving components
+
+Maintain original geometry, proportions,
+palette, and visual hierarchy.
+
+Do not replace complex recognizable
+objects with generic placeholders.
+
+The original raster pixels are not
+automatically available in HTML.
+
+Do not request raster inpainting.
+
+Canvas reconstruction cannot guarantee
+pixel-identical reproduction.
+`;
+    }
+
+    return `
+VISUAL MODE: ORIGINAL IMAGE OVERLAY.
+
+The original image must be available
+as a real runtime asset.
+
+Use an actual supplied image file
+or an actual embedded data URI.
+
+The chat attachment alone is not a
+browser-accessible image asset.
+
+Never invent image bytes or a fake URL.
+
+Draw the source image on Canvas
+before drawing animated overlays.
+
+Keep baked-in source objects stationary
+unless clean separated layers and
+background restoration assets exist.
+
+If the required asset is unavailable,
+do not silently replace this mode
+with Canvas reconstruction.
+
+Explain the missing asset requirement
+rather than fabricating it.
+`;
+  }
+
+  function buildMasterPrompt(
+    analysis,
+    ranked,
+    selected,
+    plan,
+    s
+  ) {
+    return `
+ROLE:
+Senior HTML5 Canvas 2D Motion Engineer.
+Commercial Motion Graphics Director.
+Reference Fidelity Specialist.
+
+IMAGE MOTION GENERATOR V6
+
+MISSION:
+Create one complete executable HTML
+motion graphic based on the uploaded image.
+
+DURATION:
+${s.duration} seconds.
+
+MOTION INTENSITY:
+${s.intensity}
+
+LOOP REQUEST:
+${s.loop}
+
+PRIORITY:
+1. Preserve source composition.
+2. Preserve recognizable object details.
+3. Execute the selected meaningful motion.
+4. Respect object coordinates.
+5. Maintain layer correctness.
+6. Avoid ghosting.
+7. Maintain smooth temporal continuity.
+
+${visualInstructions(s)}
+
+TECHNICAL SPECIFICATIONS:
+
+- One standalone HTML document.
+- Canvas element id="stage".
+- Internal resolution 1920x1080.
+- Responsive 16:9 display.
+- Canvas 2D rendering only.
+- requestAnimationFrame.
+- performance.now() timing.
+- Target 60fps playback.
+- No external libraries.
+- No external animation services.
+- No CSS visual animation.
+- No audio.
+- No branding or watermarks.
+
+TIME SYSTEM:
+
+Use time in seconds.
+
+For seamless looping:
+t = (elapsedSeconds % duration).
+
+For nonloop animation:
+t = min(elapsedSeconds, duration).
+
+Every animated property must derive
+from time rather than frame count.
+
+Keep all Canvas globalAlpha values
+between 0 and 1.
+
+OBJECT POSITIONING:
+
+Normalized coordinates map to:
+
+x = normalizedX * canvas.width
+y = normalizedY * canvas.height
+
+For width and height, use the
+corresponding canvas dimensions.
+
+Respect parent-child relationships.
+
+Static parents remain stationary.
+
+Do not move the camera or entire scene
+to simulate child animation.
+
+LAYER RULES:
+
+Render static background first.
+
+Render structural elements next.
+
+Render animated objects and effects
+in correct depth order.
+
+Clip screen-local animation to
+the screen interior when necessary.
+
+Do not duplicate baked-in objects.
+
+Do not invent missing image layers.
+
+MOTION RULES:
+
+The selected concept is authoritative.
+
+Execute the actual functional or
+visual transformation.
+
+Do not replace the selected action
+with arbitrary icon rotation.
+
+Rotation is allowed when it is the
+correct motion for the subject.
+
+Secondary glow, particles and pulses
+must not obscure the primary action.
+
+Preserve object identity across frames.
+
+LOOP RULES:
+
+The first and final visible states
+must be compatible.
+
+For continuous motion, verify
+velocity continuity at the seam.
+
+For a one-way process, use a logically
+appropriate reset or nonloop hold.
+
+Do not claim seamlessness solely
+because the final rotation is a
+multiple of 360 degrees.
+
+REFERENCE SCENE:
+${json(analysis.scene)}
+
+PRECISE OBJECT MAP:
+${json(analysis.objects)}
+
+OBJECT RELATIONSHIPS:
+${json(analysis.relationships || [])}
+
+SELECTED MOTION CONCEPT:
+${json(selected)}
+
+EXACT STORYBOARD:
+${json(plan.beats)}
+
+STATIC OBJECTS:
+${json(plan.static_objects || [])}
+
+LOOP ASSESSMENT:
+${json(plan.loop || {})}
+
+IMPLEMENTATION NOTES:
+${json(plan.implementation_notes || [])}
+
+VISUAL FIDELITY NOTES:
+${json(plan.visual_fidelity_notes || [])}
+
+QUALITY CHECK:
+
+1. Main objects recognizable.
+2. Source composition preserved.
+3. Primary action clearly visible.
+4. No unrelated motion.
+5. No duplicate baked objects.
+6. No broken masks.
+7. No timeline gaps.
+8. No unexpected frame jumps.
+9. Canvas renders immediately.
+10. Complete runnable HTML.
+
+OUTPUT:
+
+Return the complete HTML document only.
+
+No pseudocode.
+No concept illustration.
+No unrelated explanation.
+
+Do not claim pixel-perfect fidelity
+for a manually reconstructed scene.
+`.trim();
+  }
+
+  // ====================================================
+  // MAIN WORKFLOW
+  // ====================================================
 
   $('im-go').onclick = async () => {
     if (state.busy) return;
@@ -1180,13 +1404,8 @@ Do not guarantee impossible fidelity.
       return;
     }
 
-    if (!apiKey()) {
+    if (!$('im-key').value.trim()) {
       status('Masukkan Gemini API Key.');
-      return;
-    }
-
-    if (!$('im-model').value) {
-      status('Pilih model Gemini terlebih dahulu.');
       return;
     }
 
@@ -1197,131 +1416,166 @@ Do not guarantee impossible fidelity.
     $('im-output').value = '';
 
     try {
-      const settings = getSettings();
+      const s = settings();
 
-      status(
-        'Tahap 1/2: Precision Object Mapping & Visual Fidelity...'
+      if (s.visualMode === 'unknown') {
+        throw new Error(
+          'Nilai Visual Mode tidak dikenal. ' +
+          'Periksa pilihan pada image-motion.html.'
+        );
+      }
+
+      status('Tahap 1/4: Analisis objek dinamis...');
+
+      const analysis = await generate(
+        analysisPrompt(s),
+        true
       );
 
-      const rawAnalysis = await generate([
-        {
-          text: analysisInstruction(settings)
-        },
-        {
-          inline_data: {
-            mime_type: state.mime,
-            data: state.image
-          }
-        }
-      ]);
+      const check = validateAnalysis(analysis);
 
-      const analysis = parseJSON(
-        rawAnalysis,
-        'Precision Object Mapping'
+      if (!check.valid) {
+        throw new Error(
+          'Object mapping gagal: ' +
+          check.errors.join('; ')
+        );
+      }
+
+      status('Tahap 2/4: Membuat 3 konsep gerakan...');
+
+      const concepts = await generate(
+        conceptPrompt(analysis, s)
       );
 
-      const ids = validateAnalysis(analysis);
-
-      status(
-        'Tahap 2/2: Functional Motion & Storyboard Validation...'
-      );
-
-      const rawStoryboard = await generate([
-        {
-          text: storyboardInstruction(
-            analysis,
-            settings
-          )
-        }
-      ]);
-
-      const plan = parseJSON(
-        rawStoryboard,
-        'Motion Storyboard'
-      );
-
-      validateStoryboard(
-        plan,
-        settings.duration,
-        ids
-      );
-
-      const warnings = qualityWarnings(
+      const ranked = rankConcepts(
+        concepts,
         analysis,
-        plan,
-        settings
+        s
       );
 
-      const analysisOutput = {
+      const selected = ranked.find(
+        concept => !concept.evaluation.rejected
+      );
+
+      if (!selected) {
+        throw new Error(
+          'Tidak ada konsep yang lolos penilaian. ' +
+          'Generator tidak akan memaksakan gerakan.'
+        );
+      }
+
+      status(
+        'Tahap 3/4: Menyusun storyboard "' +
+        selected.title + '"...'
+      );
+
+      let plan = await generate(
+        storyboardPrompt(
+          analysis,
+          selected,
+          s
+        )
+      );
+
+      let errors = validateStoryboard(
+        plan,
+        analysis,
+        selected,
+        s
+      );
+
+      // One targeted repair attempt.
+      if (errors.length) {
+        status(
+          'Storyboard belum lolos. ' +
+          'Mencoba perbaikan terarah...'
+        );
+
+        plan = await repairStoryboard(
+          plan,
+          errors,
+          analysis,
+          selected,
+          s
+        );
+
+        errors = validateStoryboard(
+          plan,
+          analysis,
+          selected,
+          s
+        );
+      }
+
+      if (errors.length) {
+        $('im-analysis').value = json({
+          version: VERSION,
+          settings: s,
+          analysis,
+          concepts: ranked,
+          selectedConcept: selected,
+          storyboard: plan,
+          validationErrors: errors
+        });
+
+        throw new Error(
+          'Storyboard masih gagal validasi: ' +
+          errors.join('; ')
+        );
+      }
+
+      status('Tahap 4/4: Menyusun Master Prompt...');
+
+      const master = buildMasterPrompt(
+        analysis,
+        ranked,
+        selected,
+        plan,
+        s
+      );
+
+      const report = {
         version: VERSION,
-        settings,
-        analysis,
-        storyboard: plan.storyboard,
-        animation_rules: plan.animation_rules,
-        loop_assessment: plan.loop_assessment,
-        quality_warnings: warnings
+        settings: s,
+        scene: analysis.scene,
+        objectCount: analysis.objects.length,
+        objects: analysis.objects,
+        relationships: analysis.relationships,
+        motionConcepts: ranked,
+        selectedConcept: selected,
+        storyboard: plan,
+        validation: {
+          passed: true,
+          errors: []
+        },
+        limitations: [
+          'Concept scoring is heuristic, not proof of animation quality.',
+          'Gemini object coordinates require visual verification.',
+          'Canvas fidelity cannot be guaranteed from prompt alone.',
+          'HTML output must still be tested in a browser.'
+        ]
       };
 
-      $('im-analysis').value = JSON.stringify(
-        analysisOutput,
-        null,
-        2
-      );
+      state.lastResult = report;
 
-      const prompt = [
-        masterPrompt(settings),
-
-        '\nREFERENCE OBJECT MAP:\n',
-        JSON.stringify(analysis.objects, null, 2),
-
-        '\nREFERENCE SCENE ANALYSIS:\n',
-        JSON.stringify({
-          scene_description: analysis.scene_description,
-          visual_style: analysis.visual_style,
-          primary_process: analysis.primary_process,
-          layer_plan: analysis.layer_plan,
-          fidelity: analysis.fidelity,
-          forbidden_changes: analysis.forbidden_changes
-        }, null, 2),
-
-        '\nEXACT MOTION STORYBOARD:\n',
-        JSON.stringify(plan.storyboard, null, 2),
-
-        '\nANIMATION RULES:\n',
-        JSON.stringify(plan.animation_rules || [], null, 2),
-
-        '\nLOOP ASSESSMENT:\n',
-        JSON.stringify(plan.loop_assessment || {}, null, 2),
-
-        '\nSCENE-SPECIFIC MOTION INSTRUCTIONS:\n',
-        plan.detailed_english_prompt,
-
-        '\nQUALITY WARNINGS:\n',
-        warnings.join('\n') || 'No additional warnings.',
-
-        '\nFINAL REQUIREMENT:\n',
-        'Generate a complete executable HTML document.',
-        'Preserve reference composition.',
-        'Use the object map and storyboard.',
-        'Do not invent missing image assets.',
-        'Do not claim unverified visual fidelity.'
-      ].join('\n');
-
-      $('im-output').value = prompt;
+      $('im-analysis').value = json(report);
+      $('im-output').value = master;
 
       status(
-        `Selesai! ${analysis.objects.length} objek dipetakan, ` +
-        `${plan.storyboard.length} tahap animasi dibuat.`
+        'Selesai! ' +
+        analysis.objects.length +
+        ' objek terdeteksi, ' +
+        ranked.length +
+        ' konsep dibandingkan. ' +
+        'Storyboard lolos pemeriksaan V6.'
       );
 
-    } catch (error) {
+    } catch (e) {
       status(
         'Gagal: ' +
-        (
-          error.name === 'AbortError'
-            ? 'Waktu tunggu API habis (90 detik).'
-            : error.message
-        )
+        (e.name === 'AbortError'
+          ? 'Gemini API timeout.'
+          : e.message)
       );
 
     } finally {
@@ -1330,65 +1584,64 @@ Do not guarantee impossible fidelity.
     }
   };
 
-  // =====================================================
+  // ====================================================
   // COPY MASTER PROMPT
-  // =====================================================
+  // ====================================================
 
   $('im-copy').onclick = async () => {
-    const text = $('im-output').value;
+    const value = $('im-output').value;
 
-    if (!text) {
-      status('Belum ada Master Prompt.');
+    if (!value) {
+      status('Master Prompt masih kosong.');
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(text);
-      status('Master Prompt V5 berhasil disalin.');
+      await navigator.clipboard.writeText(value);
+      status('Master Prompt V6 disalin.');
 
     } catch {
       $('im-output').focus();
       $('im-output').select();
 
       status(
-        'Clipboard tidak tersedia. Salin manual dari kolom prompt.'
+        'Clipboard gagal. Teks sudah dipilih untuk salin manual.'
       );
     }
   };
 
-  // =====================================================
-  // DOWNLOAD GENERATED PROMPT
-  // =====================================================
+  // ====================================================
+  // DOWNLOAD MASTER PROMPT
+  // ====================================================
 
   $('im-download').onclick = () => {
-    const text = $('im-output').value;
+    const value = $('im-output').value;
 
-    if (!text) {
-      status('Belum ada Master Prompt.');
+    if (!value) {
+      status('Master Prompt masih kosong.');
       return;
     }
 
-    const blob = new Blob([text], {
+    const blob = new Blob([value], {
       type: 'text/plain;charset=utf-8'
     });
 
     const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
 
-    const link = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'image-motion-master-v6.txt';
 
-    link.href = url;
-    link.download = 'image-motion-master-v5.txt';
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
 
     setTimeout(() => {
       URL.revokeObjectURL(url);
     }, 1000);
 
-    status('Master Prompt V5 siap disimpan.');
+    status('Master Prompt V6 disimpan.');
   };
 
-  status('Image Motion Generator V5 siap.');
+  status('Image Motion Generator V6 siap.');
 })();
