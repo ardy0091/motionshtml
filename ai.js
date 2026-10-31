@@ -1,3 +1,4 @@
+
 /* ai.js — prompt generator + render HTML canvas ke video (tanpa API key) */
 const $ = id => document.getElementById(id);
 function dims() { const h = +$('res').value, r = $('ratio').value; return r === '16:9' ? [Math.round(h * 16 / 9), h] : r === '9:16' ? [h, Math.round(h * 16 / 9)] : [h, h]; }
@@ -37,12 +38,35 @@ const STYLES = {
   'Clean White Background Technology': {look: 'pure white (#FFFFFF) background with flat coloured objects and thin flat contact shadows, ideal for stock', pals: ['Clean White', 'Corporate Blue']}
 };
 const TECH_COMMON = [
-  'Ilustrasi 2D murni dari bentuk dan path Canvas (fill, stroke, arc, bezier). DILARANG: rendering atau model 3D, perspektif 3D, ekstrusi, bevel, gradasi atau bayangan yang mensimulasikan volume 3D, objek fotorealistik, dan tekstur noise.',
-  'Perangkat teknologi harus mudah dikenali: gambar komponen nyata (bukan hanya lingkaran, kotak, dan garis acak) dengan detail teknis secukupnya seperti sekrup, port, sirip pendingin, pin, lensa, kabel, atau rel. Detail komponen konsisten di seluruh objek.',
-  'Kualitas: garis dan kurva presisi, warna profesional, hierarki visual jelas, negative space seimbang, transisi halus. Tidak ada flicker, jitter, atau elemen bertabrakan, dan seluruh objek utama tetap terlihat penuh di dalam bingkai.',
-  'Jangan terlalu sering memakai dashboard, panel UI, progress bar, atau grafik data. Utamakan objek teknologi dan proses visualnya.',
-  'Gerak harus sesuai fungsi objek (sinyal merambat, perakitan, pemindaian, perutean paket data, orbit, aliran energi, dan sebagainya). Jangan memakai rotasi, zoom, atau gerakan partikel yang sama untuk semua elemen.',
-  'Tanpa teks, huruf, angka, merek, logo, atau watermark.'
+  // MASTER PROMPT MANUAL — UNIVERSAL 2D MOTION ART DIRECTION
+  'PERAN: Kamu adalah creative director motion graphics, ilustrator vektor komersial, animator 2D, dan engineer Canvas HTML5. Buat visual yang terasa seperti karya studio profesional, bukan sekadar demonstrasi kode atau ikon sederhana.',
+  'PRIORITAS: Ikuti subjek, gaya visual terpilih, palet terpilih, jenis animasi, aturan latar, resolusi, dan durasi. Jika ada aturan umum yang tidak cocok dengan subjek, adaptasikan aturan umum tersebut tanpa mengabaikan spesifikasi eksplisit.',
+  'UNIVERSALITAS: Tema boleh berupa teknologi, makanan, buah, tumbuhan, satwa, alam, sains, kesehatan, manufaktur, transportasi, manusia, karakter, produk, geometri, atau abstrak. Jangan otomatis menambahkan sirkuit, panel data, layar, atau komponen teknologi ke tema nonteknologi.',
+  'RENCANA VISUAL: Sebelum membuat kode, tentukan diam-diam objek utama, ciri visual pengenal, komponen pendukung, aksi utama, hubungan sebab-akibat, arah perhatian, dan kondisi akhir. Jangan menuliskan rencana itu dalam jawaban; langsung terapkan dalam kode HTML.',
+  'DESAIN OBJEK: Gambar subjek sebagai konstruksi yang spesifik dan mudah dikenali. Bentuk utama harus memiliki siluet khas, proporsi logis, bagian penting yang relevan, serta detail sekunder yang benar-benar membantu pengenalan objek. Jangan mengganti objek kompleks dengan beberapa lingkaran dan kotak generik.',
+  'ANATOMI KONTEKSTUAL: Untuk buah perhatikan kulit, tangkai, daun, biji atau irisan jika relevan; untuk tanaman perhatikan struktur batang dan pertumbuhan daun; untuk mesin perhatikan rangka, poros, rel, sambungan dan penggerak; untuk UI perhatikan hierarki panel dan status; untuk karakter perhatikan artikulasi dan ekspresi. Contoh ini bukan daftar elemen wajib.',
+  'KONSTRUKSI PATH: Bentuk organik gunakan kurva quadraticCurveTo atau bezierCurveTo yang terkontrol; komponen presisi gunakan garis, busur, bentuk berulang dan sudut konsisten. Gunakan ctx.save/restore, transformasi dan clipping secara benar. Hindari path acak yang membuat bentuk sulit dibaca.',
+  'KETELITIAN BENTUK: Pertahankan konsistensi ukuran, bentuk, stroke, posisi sambungan dan identitas objek di semua frame. Transformasi atau deformasi harus disengaja dan tidak membuat komponen terlepas secara tidak logis.',
+  'GAYA VISUAL: Terjemahkan style yang dipilih menjadi aturan konkret untuk siluet, geometri, ketebalan outline, sudut, ruang kosong, warna, material dan treatment detail. Jangan mencampur gaya flat minimalis dengan efek realistis atau neon kecuali gaya yang dipilih memang memerlukannya.',
+  'WARNA: Tetapkan warna dominan, warna pendukung, warna aksen dan kontras keterbacaan. Ikuti palet yang dipilih; gunakan turunan terang atau gelap seperlunya. Jangan mengubah warna objek secara acak antarframe.',
+  'EFEK 2D: Gradasi Canvas, transparansi, highlight, lapisan warna, shadow dan glow boleh dipakai secara hemat bila mendukung style. Untuk gaya flat atau monochrome, prioritaskan bidang warna solid. Jangan menggunakan WebGL, model 3D, tekstur foto, gambar eksternal atau library.',
+  'KOMPOSISI: Bangun focal point jelas dengan ukuran objek utama yang cukup besar, ruang negatif seimbang, kedalaman melalui susunan layer 2D dan arah gerak yang mudah dibaca. Jangan menempatkan objek utama terlalu kecil atau memotong bagian penting secara tidak sengaja.',
+  'KETERBACAAN: Bedakan elemen utama, sekunder dan dekoratif. Detail kecil harus tetap terbaca pada tampilan video normal; jangan memenuhi layar dengan partikel, label, garis, bingkai atau panel yang tidak mendukung cerita visual.',
+  'BACKGROUND: Hormati pilihan latar dari Master Prompt. Bila transparan, jangan menggambar latar; bila chroma key, jangan gunakan warna yang mendekati chroma pada objek; bila latar gaya, buat latar yang mendukung subjek tanpa mengalahkan focal point.',
+  'AKSI UTAMA: Animasi harus memiliki perubahan visual bermakna yang sesuai konsep. Tampilkan fungsi atau kejadian yang diminta, bukan menggantinya dengan ikon berputar, zoom kamera, denyut cahaya, atau titik-titik bergerak tanpa tujuan.',
+  'MEKANISME GERAK: Pilih mekanisme yang benar-benar cocok dari translasi, rotasi, scaling, morphing, reveal, assembly, disassembly, flow, growth, articulation, state change, atau masking. Gunakan seperlunya; jangan memasukkan semua mekanisme sekaligus.',
+  'SEBAB AKIBAT: Setiap perubahan utama memiliki pemicu visual dan reaksi yang jelas. Jika mesin beroperasi, tampilkan komponen penggeraknya; jika cairan mengisi wadah, permukaan cairan naik dan terpotong oleh bentuk wadah; jika tanaman tumbuh, bagian baru muncul dari struktur sebelumnya.',
+  'KOREOGRAFI: Rancang fase persiapan, aksi, reaksi dan penyelesaian dengan durasi proporsional. Untuk proses linear, hasil akhir harus stabil dan terbaca; untuk seamless loop, seluruh posisi, warna dan keadaan objek harus kembali tepat ke kondisi awal tanpa lompatan.',
+  'GERAK SEKUNDER: Tambahkan follow-through, pantulan kecil, osilasi atau reaksi komponen hanya jika masuk akal. Gerak sekunder harus memperkuat gerakan utama, bukan membuat seluruh elemen terus bergerak secara seragam.',
+  'EASING: Gunakan interpolasi berbasis waktu dengan easing yang sesuai sifat objek; gerak mekanis dapat tegas, gerak organik lebih lembut. Hindari gerak kaku, perubahan kecepatan mendadak, teleportasi, jitter, flicker atau easing identik pada semua elemen.',
+  'KONTINUITAS: Posisi, rotasi, skala, bentuk, opacity dan warna harus merupakan fungsi deterministik dari waktu. Jangan memanggil Math.random untuk posisi atau bentuk baru setiap frame. Jika butuh variasi, buat nilai acak sekali di awal.',
+  'TEKNIK ANIMASI: Gunakan requestAnimationFrame dengan waktu aktual; hitung progress ternormalisasi untuk setiap fase. Gunakan canvas.width dan canvas.height sebagai basis seluruh tata letak dan ukuran agar hasil proporsional pada berbagai resolusi dan rasio.',
+  'LAYER DAN CLIPPING: Tentukan urutan gambar secara konsisten dari latar ke foreground. Gunakan clipping untuk cairan, indikator, aliran, bagian dalam mesin atau objek lain yang wajib tetap berada dalam batas tertentu. Reset transformasi dan state Canvas pada setiap frame.',
+  'PERFORMA: Gunakan fungsi gambar modular, cache geometri statis jika bermanfaat, dan hindari filter mahal atau terlalu banyak partikel. Kehalusan gerak dan bentuk bersih lebih penting daripada efek dekoratif berlebihan.',
+  'KUALITAS KOMERSIAL: Buat hasil bersih, seimbang, profesional dan relevan untuk footage stok. Jangan menambahkan logo, merek, watermark atau branding fiktif. Teks fungsional hanya boleh muncul jika memang dibutuhkan konsep dan tidak bertentangan dengan instruksi khusus.',
+  'ANTI GENERIK: Jangan menghasilkan layar kosong dengan satu simbol, sekumpulan bentuk acak, dashboard yang tidak relevan, atau animasi yang hanya bergerak beberapa piksel. Wajib ada objek atau komposisi yang jelas dan aksi utama yang nyata.',
+  'AUDIT INTERNAL: Sebelum mengakhiri kode, periksa diam-diam: apakah objek dikenali, style konsisten, warna sesuai, aksi sesuai fungsi, sebab-akibat jelas, semua komponen terlihat, timeline benar, loop atau akhir linear sesuai, dan tidak ada aset eksternal atau elemen UI tambahan.',
+  'OUTPUT: Berikan HTML mandiri yang lengkap dan siap dijalankan, tanpa placeholder, tanpa bagian yang dihilangkan, tanpa penjelasan di luar satu blok kode HTML.'
 ];
 const PTYPES = {
   proses: {label: 'Subjek teknologi (objek dan prosesnya)', loop: false,
@@ -306,4 +330,3 @@ $('code').addEventListener('input', updClr);
 $('clrcode').onclick = () => { $('code').value = ''; fr.srcdoc = ''; $('pb').style.width = '0'; setStatus('Kode dihapus. Tempel kode baru lalu klik Render video.'); updClr(); };
 $('bgmode').addEventListener('change', bgUi);
 bgUi();
-
